@@ -1,6 +1,7 @@
 # workflows/01-account-setup.md
 # Account Setup Workflow
 # โหลดเฉพาะ MODE 1
+# Version 2.1 | May 2026 | Browser-required + MCP handoff
 
 ---
 
@@ -14,10 +15,13 @@ PHASE 2A  → เอกสาร (เฉพาะกลุ่ม B)
 PHASE 2B  → Worksheet (แตกตาม Account Type)
 PHASE 3   → Browser Automation (กรอกฟอร์ม 4 Steps)
 PHASE 4   → Verify + Troubleshoot
+PHASE 5   → MCP Handoff (.env + read-only smoke test)
 ```
 
 > **หลักการสำคัญ:** ต้องรู้ Business Type + Account Type ก่อน ค่อยเตรียม worksheet
 > เพราะ Account Type ต่างกัน → ฟิลด์ที่ต้องกรอกต่างกัน
+
+> **MCP boundary:** Account setup/KYC/payment ยังเป็น Browser/UI-only จึงไม่ใช้ MCP สร้างบัญชี แต่หลังได้ Access Key / Secret Key / Ad Account ID แล้วต้อง handoff ไป MCP Layer เพื่อทำ campaign/report/optimize ต่อ
 
 ---
 
@@ -356,6 +360,30 @@ Browser execution:
 
 ---
 
+## PHASE 5 — MCP HANDOFF
+
+หลังบัญชีสร้าง/อนุมัติแล้ว และ user ได้สิทธิ์ API:
+
+1. ให้ user นำค่าเหล่านี้มาใส่ `.env` เอง
+   - `LINE_ADS_ACCESS_KEY`
+   - `LINE_ADS_SECRET_KEY`
+   - `LINE_ADS_AD_ACCOUNT_ID`
+2. ห้าม hardcode หรือแสดง secret ในแชท
+3. รัน read-only smoke test ด้วย MCP:
+   - `list_campaigns`
+   - `list_audiences`
+   - `get_daily_report` หรือ `get_report`
+4. ถ้า read-only ผ่าน ให้ switch workflow ถัดไป:
+   - Campaign creation → `02-campaign.md`
+   - Report → `03-report-schedule.md`
+   - Optimize → `04-optimize.md`
+
+ถ้ายังไม่ได้ Access Key/Secret:
+- ใช้ Browser ช่วยนำทางไปหน้า API management ได้
+- แต่ user ต้องเป็นคนคัดลอก/จัดการ secret เอง
+
+---
+
 ## CATEGORY CATALOG — หมวดหมู่บัญชีผู้ใช้โฆษณา
 
 ⚠️ **เปลี่ยนไม่ได้หลัง submit** — ให้ user ยืนยันก่อนเลือกเสมอ
@@ -407,9 +435,10 @@ Browser execution:
    → ต้อง stop และยืนยันชัดเจนก่อนกด "สร้าง"
 6. **เช็ค duplicate ก่อนสร้าง** — บัญชีอาจมีอยู่แล้ว ถามก่อน
 7. **ขั้นตอน Payment** — ห้ามแตะ ปล่อยให้ user ทำเอง
+8. **MCP Handoff หลัง setup** — เมื่อได้ credentials แล้ว campaign/report/optimize ต้องใช้ MCP-first workflows
 
 ---
 
-*Version 2.0 | May 2026*
+*Version 2.1 | May 2026*
 *อ้างอิง: lineforbusiness.com/th/service/line-ads/LINEAdsGuideline*
-*Updated: เพิ่ม Phase 1.5, แตก worksheet ตาม Account Type, แก้ payerName trap*
+*Updated: เพิ่ม MCP handoff หลัง account setup, ระบุ boundary ว่า KYC/payment ยังเป็น Browser/UI-only*

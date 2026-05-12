@@ -1,289 +1,322 @@
 # workflows/04-optimize.md
 # Optimization Workflow
-# โหลดเฉพาะ MODE 4
-# Version 2.0 | May 2026
+# Version 3.0 | May 2026 | MCP-first
 
 ---
 
-## ลำดับการทำงาน (Overview)
+## Overview
+
+MODE 4 ใช้ MCP tools เป็น default สำหรับ diagnose และ execute หลัง user confirm
 
 ```
-PHASE 1 → INTAKE        (เลือก campaign + entry_mode)
-PHASE 2 → DIAGNOSE      (ดึง metric + เทียบ benchmark + ระบุปัญหา)
-PHASE 3 → RECOMMEND     (เสนอ action 2-3 ทางเลือก พร้อม trade-off)
-PHASE 4 → CONFIRM       (user เลือก action + ยืนยันค่าเงินทุกครั้ง)
-PHASE 5 → EXECUTE       (snapshot before → ทำ action → snapshot after)
-PHASE 6 → FOLLOW-UP     (เสนอดูผลซ้ำใน 24-48 ชม.)
+PHASE 1 → INTAKE
+PHASE 2 → SNAPSHOT BEFORE (MCP read)
+PHASE 3 → DIAGNOSE
+PHASE 4 → RECOMMEND
+PHASE 5 → CONFIRM
+PHASE 6 → EXECUTE (MCP dry-run → confirm → dry_run=False)
+PHASE 7 → SNAPSHOT AFTER
+PHASE 8 → FOLLOW-UP
 ```
+
+Browser fallback ใช้เฉพาะ visual QA, API missing feature, หรือ account/login/payment issue
 
 ---
 
-## Money Safety Rules (ใช้ทุก phase)
+## Money Safety Rules
 
 ```
 Hard stop:
-- ห้าม assume / default งบใหม่หรือ delta งบ
-- ห้าม assume / default bid cap, CPF, CPA, CPC ใหม่
-- ทุกค่าเงินที่จะเปลี่ยน ต้องมาจาก user เป็นตัวเลขชัดเจน
-- ก่อน execute action ที่กระทบเงิน (เพิ่มงบ, เปลี่ยน bid, pause, restart)
-  → ต้อง confirm จำนวนเงิน + ระยะเวลาผลกระทบ ก่อนทุกครั้ง
+- ห้าม assume งบใหม่หรือ bid/cost cap ใหม่
+- ห้ามคำนวณ +20% หรือเลือกเลขแทน user
+- ทุก action ที่เปลี่ยนเงินต้องมีตัวเลขจาก user
+- ทุก write action ต้อง dry-run ก่อน
+- ก่อน dry_run=False ต้องได้คำว่า "ยืนยัน" หรือ "ทำได้เลย"
+- Pause/resume ก็ต้อง confirm เพราะมีผลกับ spend
 ```
 
-ตัวอย่างคำถามที่ถูก:
-> "อยากเพิ่มงบจาก ฿300 → กี่บาทครับ? ระบบจะ start ทันทีหลังบันทึก"
+ตัวอย่างที่ถูก:
+> "อยากเพิ่ม budget จาก ฿100/วัน เป็นกี่บาทครับ?"
 
 ตัวอย่างที่ผิด:
-> "ขอเพิ่มงบ 20% นะครับ" ❌ (Cowork ตัดสินใจ % เอง)
+> "เพิ่มเป็น ฿150/วันนะครับ" ถ้า user ไม่ได้บอกเลข
 
 ---
 
-## PHASE 1 — INTAKE
+## MCP Tools
 
-### Step 1.1: เลือก campaign
+| Action | Tool |
+|---|---|
+| Diagnose campaign metrics | `get_report`, `get_weekly_report` |
+| ดู campaign/adset/ad | `list_campaigns`, `list_adsets`, `list_ads`, `get_ad_status` |
+| Pause/resume campaign | `pause_campaign`, `resume_campaign` |
+| Pause/resume adset | `pause_adset`, `resume_adset` |
+| Change campaign budget/status | `update_campaign` |
+| Change adset budget/bid/targeting/status | `update_adset` |
+| Upload new creative | `upload_media` |
+| Create new ad | `create_ad` |
+| Interest targeting codes | `list_advanced_targeting_codes` |
+
+ไม่มี delete tools ใช้ pause แทน
+
+---
+
+## Phase 1 — Intake
 
 ถาม:
-> "อยากปรับ campaign ไหนครับ? หรือดูทั้งหมดก่อน?"
-
-ถ้า user ระบุชื่อ → เปิดเฉพาะ campaign นั้น
-ถ้า user บอก "ดูทั้งหมด" → เปิด dashboard summary
-
-### Step 1.2: เลือก entry_mode
 
 ```
-จะให้ผมช่วยแบบไหนครับ?
-
-1. ผมวิเคราะห์ + เสนอ action, คุณกดปรับเอง — ประหยัด token, control 100%
-2. ผมวิเคราะห์ + execute action ให้, คุณยืนยันก่อนทุกครั้ง — สะดวก แต่ใช้ token มากกว่า
-
-แนะนำ: ถ้า familiar กับ LINE Ads แล้ว เลือก 1 ครับ
+อยาก optimize campaign ไหนครับ?
+หรือให้ผมดูทั้งหมดก่อนด้วย MCP report?
 ```
 
-บันทึกเป็น `optimize_entry_mode`:
-- `ADVISE_ONLY` = Cowork วิเคราะห์ + แนะนำ user ทำเอง
-- `EXECUTE` = Cowork ทำ action หลัง user confirm
+ถ้า user ระบุชื่อ/ID:
+- `list_campaigns` เพื่อหา campaign
+- `list_adsets`
+- `list_ads`
+- `get_report` ตามช่วงที่เกี่ยวข้อง
 
-Default `ADVISE_ONLY` ถ้า user ไม่แน่ใจ
+ถ้า user บอก "ดูทั้งหมด":
+- `list_campaigns`
+- `get_weekly_report(level="CAMPAIGN")`
 
 ---
 
-## PHASE 2 — DIAGNOSE
+## Phase 2 — Snapshot Before
 
-### Step 2.1: ดึงข้อมูล (Token-disciplined)
-
-```
-✅ DO:
-- ใช้ read_page interactive เพื่อดึงตาราง metrics
-- ดึงเฉพาะ columns ที่ต้องใช้:
-  Impressions, Clicks, CTR, Spend, CPC/CPM, 
-  Conversions/Friends, Status, Budget remaining
-- screenshot เฉพาะตอน:
-  · chart/visual ที่ DOM อ่านไม่ได้
-  · error message เฉพาะที่ user ต้องเห็น
-  · ตาราง 7-day trend ที่ต้อง compare visual
-
-❌ DON'T:
-- screenshot dashboard ทั้งหน้าทุกครั้ง
-- ดึง metric ที่ไม่ relevant กับ objective
-```
-
-### Step 2.2: เทียบ benchmark
-
-โหลด `knowledge/kpi-benchmarks.md` ตอนนี้
-
-Common diagnose patterns:
+ก่อนเสนอ action หรือ execute ต้องเก็บ snapshot:
 
 ```
-[Friend Added Campaign]
-Friend = 0 + Impression > 1,000
-  → CPF cap ต่ำเกิน (bid ไม่ชนะ) หรือ targeting แคบ
-  
-Friend = 0 + Impression < 100
-  → Ad ยังไม่ approve หรือ targeting ใหญ่เกินจน LINE หา audience ไม่เจอ
-
-CPF จริง > CPF cap × 0.9
-  → ใกล้ ceiling — ขยับ cap ขึ้นจะได้ friend เพิ่มเร็ว
-
-[Website Click Campaign]
-CTR < 1.0% + Impression > 5,000
-  → Creative/Headline ไม่ดึงดูด → เปลี่ยน creative
-  
-CTR ปกติ + CPC สูง > ฿10
-  → Bidding หรือ competition สูง → ลอง auto bid
-
-[ทุก objective]
-Budget หมดก่อนเที่ยง 3 วันติด
-  → audience ตอบสนองดี → user อาจอยากเพิ่มงบ (ห้ามเพิ่มเอง)
-
-Budget ใช้ < 50% ของวัน 3 วันติด
-  → bid ต่ำเกิน หรือ audience แคบเกิน → ขยับ bid หรือขยาย targeting
-  
-Status = Rejected
-  → ดู rejection reason → แปลไทย → แนะนำวิธีแก้
+- Campaign ID/name/status/objective
+- Budget
+- Adset ID/name/status/bid/budget/targeting
+- Ads + creative review status
+- 7-day metrics หรือช่วงที่ user ขอ
 ```
 
-### Step 2.3: สรุป diagnosis ให้ user
+ใช้ MCP read tools เท่านั้นก่อน
+
+---
+
+## Phase 3 — Diagnose
+
+โหลด `knowledge/kpi-benchmarks.md` เฉพาะตอนวิเคราะห์ benchmark
+
+Patterns:
 
 ```
-📊 [ชื่อ Campaign] — [วันที่เก็บข้อมูล]
+GAIN_FRIENDS:
+- Friends = 0 + Impressions > 1,000 → bid cap ต่ำ / creative / targeting
+- Impressions = 0 → paused, review, bid ต่ำ, targeting แคบ
+- CPF สูงใกล้ cap → อาจต้องปรับ bid หรือ creative แต่ห้ามเลือกเลขเอง
 
-ผลลัพธ์:
-• [metric หลัก]: [ค่า] ([ดี/ปานกลาง/ต้องปรับ])
-• [metric รอง]: [ค่า]
+Website:
+- CTR < 1% + Impressions > 5,000 → creative/headline
+- CPC สูง → bid/competition/targeting
 
-ปัญหาที่เจอ:
-1. [ปัญหา] — [reason]
-2. [ปัญหา] — [reason]
+All objectives:
+- Campaign/adset paused → ไม่ deliver
+- Creative IN_REVIEW/REJECTED → ยังไม่ deliver หรือแก้ creative
+- Budget ใช้น้อยมาก → bid ต่ำ/targeting แคบ/review
+```
+
+สรุปเป็นไทย:
+
+```
+Diagnosis:
+- ปัญหา: [what]
+- หลักฐาน: [metric/status reason]
+- ความเสี่ยง: [LOW/MEDIUM/HIGH]
 ```
 
 ---
 
-## PHASE 3 — RECOMMEND ACTION
+## Phase 4 — Recommend
 
-เสนอ 2-3 ทางเลือก พร้อม trade-off ชัดเจน:
+เสนอ 2-3 ทางเลือก พร้อม trade-off:
 
 ```
-แนะนำ 3 ทางครับ เลือกได้:
+A) เปลี่ยน creative / เพิ่ม ad ใหม่
+   Risk: MEDIUM, ไม่เปลี่ยนเงินโดยตรง
 
-[A] [Action เร็ว แก้ symptom] — เช่น "ขยับ CPF cap จาก ฿15 → ฿25"
-    Trade-off: เพิ่ม cost/friend แต่ได้ friend เร็วขึ้น
-    Risk: HIGH (กระทบเงิน) — ต้อง confirm จำนวนเงิน
+B) ปรับ targeting / เพิ่ม interest / broadening
+   Risk: MEDIUM, กระทบ delivery/learning
 
-[B] [Action กลางๆ แก้ root cause] — เช่น "เปลี่ยน creative ให้ชัดเจนกว่าเดิม"
-    Trade-off: ใช้เวลา 1-2 วัน learning ใหม่ แต่ CPF จะถูกลงระยะยาว
-    Risk: MEDIUM — ใช้เวลา ไม่กระทบเงินทันที
+C) ปรับ budget หรือ bid cap
+   Risk: HIGH, ต้องให้ user ระบุเลขเงินเอง
 
-[C] [Action ระยะยาว แก้กลยุทธ์] — เช่น "เพิ่ม Ad Set ใหม่ targeting ละเอียด"
-    Trade-off: ต้องสร้างใหม่ 1 set + creative
-    Risk: HIGH (เพิ่มงบ) — ต้องตกลง budget ใหม่
-    
-ห้ามทำทันที: ผมจะรอให้คุณเลือกและยืนยันตัวเลขก่อน
+D) Pause/resume campaign/adset
+   Risk: MEDIUM/HIGH เพราะมีผลกับ spend
 ```
+
+ห้าม execute จาก recommendation ทันที
 
 ---
 
-## PHASE 4 — CONFIRM
+## Phase 5 — Confirm
 
-หลัง user เลือก action:
+ก่อน write action:
 
 ```
 สรุปก่อนทำ:
-• Action: [ชื่อ]
-• Campaign/Ad Set: [ชื่อ]
-• ค่าเดิม: [old value]
-• ค่าใหม่: [new value — มาจาก user]
-• ผลกระทบทันที: [Impressions/Spend จะเปลี่ยนยังไง]
-• Risk level: [Low/Medium/High]
+- Action: [pause/update/create]
+- Target: [campaign/adset/ad ID]
+- ค่าเดิม: [old]
+- ค่าใหม่: [new from user]
+- ผลกระทบ: [delivery/spend/learning]
+- Risk: [level]
 
-ยืนยันให้ผมทำเลยไหมครับ?
+ผมจะทำ dry-run ก่อน ยังไม่ส่งจริง ยืนยันให้ทำ preview ไหมครับ?
 ```
 
-ถ้า Risk = HIGH (กระทบเงิน): ต้องได้คำว่า "ยืนยัน"/"โอเค" ชัดเจน
-ถ้า Risk = MEDIUM: bundle confirm ได้
+หลัง dry-run:
+
+```
+นี่คือ payload ที่จะส่งจริง:
+[compact payload]
+
+พิมพ์ "ยืนยัน" เพื่อส่งจริง
+```
 
 ---
 
-## PHASE 5 — EXECUTE
+## Phase 6 — Execute With MCP
 
-### Step 5.1: Snapshot ก่อนทำ
-
-บันทึกค่า metric + setting ปัจจุบัน:
-```
-- Campaign Budget: ฿X/วัน
-- CPF cap: ฿Y
-- Status: Active
-- 7-day metrics: [Impressions, Friends, Spend, CPF avg]
-```
-
-เก็บใน context หรือบันทึกที่ `reports/optimization-[YYYY-MM-DD]-before.md`
-
-### Step 5.2: ทำ action
+### Pause/Resume
 
 ```
-Action types + execution rules:
-
-[Pause Ad Set/Campaign]
-- Risk: MEDIUM (หยุด spend แต่ไม่กลับมาอัตโนมัติ)
-- Step: Navigate → Ad Set → toggle status PAUSED
-- ต้อง confirm ก่อนทำ
-
-[Restart paused]
-- Risk: MEDIUM (เริ่ม spend อีกครั้ง)
-- Step: toggle status ACTIVE
-- ต้อง confirm + ทวน budget เดิม
-
-[Change Budget]
-- Risk: HIGH (เงิน)
-- Rule: ต้องมีตัวเลขใหม่จาก user เท่านั้น
-- ห้าม Cowork คำนวณ % เอง (เช่น +20%)
-- Step: Edit campaign → ใส่ตัวเลขใหม่ → save
-
-[Change Bid Cap (CPF/CPC/CPA)]
-- Risk: HIGH (เงิน)
-- Rule: ต้องมีตัวเลขใหม่จาก user เท่านั้น
-- Step: Edit ad set → bid section → ใส่ค่าใหม่ → save
-
-[Change Creative]
-- Risk: MEDIUM (กระทบ learning phase)
-- Rule: ใช้ creative ใหม่ที่ user ยืนยันแล้ว
-- ระวัง: pause learning 24-48 ชม.
-
-[Change Targeting]
-- Risk: MEDIUM (กระทบ delivery)
-- Rule: บันทึก targeting เดิมก่อน เผื่อต้อง revert
+pause_campaign / resume_campaign
+pause_adset / resume_adset
 ```
 
-⚠️ **ห้าม delete campaign/ad set/ad** ถ้า user ไม่สั่งชัดเจน — ใช้ pause แทน
+Rules:
+- dry-run ก่อน
+- confirm ก่อน write จริง
+- read back หลังทำ
 
-### Step 5.3: Snapshot หลังทำ
+### Change Budget
 
-อ่าน metric หลัง save 2-3 นาที (ถ้าระบบยังไม่ update ให้ note ว่า "รอ LINE process")
+```
+update_campaign(daily_budget=...)
+update_adset(daily_budget=...)
+```
+
+Rules:
+- daily_budget ต้องมาจาก user
+- แสดงบาท ไม่พูดแต่ micro
+
+### Change Bid Cap
+
+```
+update_adset(bid_amount=...)
+```
+
+Rules:
+- bid_amount ต้องมาจาก user
+- สำหรับ CPF/COST_CAP ต้องทวนว่าเป็นเพดานต่อ friend
+
+### Change Targeting / Interest
+
+```
+list_advanced_targeting_codes
+update_adset(interest_codes=[...], targeting fields...)
+```
+
+Rules:
+- ต้องใช้ official code เท่านั้น
+- ถ้ามี `interest_codes` ต้องเป็น `targetingMode=MANUAL`
+- บันทึก targeting เดิมก่อน เผื่อ rollback
+
+### Change Creative
+
+```
+upload_media
+create_ad
+```
+
+Rules:
+- upload media ต้อง confirm เพราะเป็น write action
+- create ad ต้อง dry-run + confirm
+- read back ด้วย list_ads/get_ad_status
 
 ---
 
-## PHASE 6 — FOLLOW-UP
+## Phase 7 — Snapshot After
+
+หลัง write จริง:
 
 ```
-✅ ปรับเรียบร้อยครับ
-
-ก่อนปรับ → หลังปรับ:
-• [metric]: [old] → [new]
-
-เสนอตามดูผลใน 24-48 ชม.:
-[ ตั้ง schedule report เพิ่ม ] [ จะเรียกผมดูผลเองทีหลัง ]
+1. read back target ด้วย MCP
+2. เทียบ before/after
+3. แจ้ง status reasons
+4. ถ้า LINE ยัง process/review ให้บอกว่า pending
 ```
 
-ถ้า user ตอบ "ตั้ง schedule" → switch ไป MODE 3
+ตัวอย่าง:
+
+```
+ปรับเรียบร้อยครับ
+- ก่อน: targetingMode=AUTO
+- หลัง: targetingMode=MANUAL + interest code 4
+- Delivery ยังไม่รัน เพราะ CAMPAIGN_PAUSED / CREATIVE_REVIEW_IN_REVIEW
+```
 
 ---
 
-## ROLLBACK PLAN
-
-ถ้าหลังปรับแล้วผลแย่ลง (CPF พุ่ง / Friends ลด > 30%):
+## Phase 8 — Follow-up
 
 ```
-ผลหลังปรับ 24 ชม. แย่กว่าเดิม:
-• [metric]: [old] → [new] = [delta]
-
-แนะนำ rollback กลับค่าเดิม:
-• [setting]: [new] → [old]
-
-ยืนยันให้ revert ไหมครับ? (Risk: HIGH — กระทบเงิน)
+อยากให้ผมตามดูผลใน 24-48 ชม.ไหมครับ?
+ถ้าตั้ง report ให้ไป MODE 3
 ```
 
-ทำ revert เป็น action ใหม่ ผ่าน PHASE 4-5 ปกติ (ต้อง confirm)
+ถ้า user ขอ schedule → switch to `03-report-schedule.md`
 
 ---
 
-## NOTES สำหรับ Cowork Agent
+## Rollback Plan
 
-1. **Money inputs จาก user เท่านั้น** — ห้าม Cowork ตัดสินใจ % หรือจำนวนเงินเอง
-2. **Snapshot before/after** ทุกครั้งที่ทำ action ที่กระทบ metrics
-3. **Pause ก่อน Delete** — ถ้าไม่แน่ใจให้ pause ก่อน delete ไม่ได้
-4. **Rollback plan** — ทุก action ต้องคิดล่วงหน้าว่า revert ยังไงถ้าผลแย่
-5. **Token discipline** — โหลด kpi-benchmarks.md เฉพาะ Phase 2; screenshot เฉพาะ chart/error
-6. **Risk-based confirm** — ทุก action ที่เป็น HIGH risk ต้อง confirm จำนวนเงินชัดเจน
+ทุก action ต้องมี rollback concept:
+
+| Action | Rollback |
+|---|---|
+| เพิ่ม budget | update กลับค่าเดิม หลัง user confirm |
+| เพิ่ม bid | update กลับค่าเดิม หลัง user confirm |
+| pause | resume หลัง user confirm |
+| resume | pause หลัง user confirm |
+| targeting change | update targeting กลับ snapshot เดิม |
+| creative change | pause ad ใหม่ หรือสร้าง creative ใหม่ ห้าม delete |
+
+Rollback ที่กระทบเงินต้อง confirm ใหม่เสมอ
 
 ---
 
-*Version 2.0 | May 2026*
-*Updated: Money Safety + entry_mode + snapshot before/after + rollback plan + risk-based confirm*
+## Browser Fallback
+
+ใช้ browser เฉพาะเมื่อ:
+- MCP API ไม่มีข้อมูล rejection reason ที่ต้องดูใน UI
+- ต้องตรวจ creative preview/crop จริง
+- ต้องทำ payment/account setting
+- API permission ไม่พอและ user เลือก self-fill
+
+Token discipline:
+- DOM/interactive ก่อน screenshot
+- screenshot เฉพาะ chart/preview/error
+- ไม่ login/password/OTP/card แทน user
+
+---
+
+## Notes
+
+1. MCP-first สำหรับ diagnose และ execute
+2. Read-only tools ไม่ต้อง confirm
+3. Write tools dry-run + confirm เสมอ
+4. Money inputs จาก user เท่านั้น
+5. Snapshot before/after ทุก write action
+6. No delete, use pause
+7. ถ้า method endpoint error ให้เช็ค spec ก่อนสรุป permission เช่น update adgroup ใช้ POST
+
+---
+
+*Version 3.0 | May 2026*
+*Updated: MCP-first optimization, dry-run execute flow, targeting/creative update via MCP, browser fallback scope*

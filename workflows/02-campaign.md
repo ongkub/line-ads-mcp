@@ -1,495 +1,401 @@
 # workflows/02-campaign.md
 # Campaign + Ad Set + Ad Creation
-# Version 2.0 | May 2026
+# Version 3.0 | May 2026 | MCP-first
 
 ---
 
-## ARCHITECTURE: 2 PATHS
+## Architecture
+
+Default path สำหรับ MODE 2 คือ MCP/API-first เพื่อลด token, ลดความเปราะจาก browser UI, และให้ผลลัพธ์ตรวจซ้ำได้จาก payload จริง
 
 ```
-PATH A — AI Agent (Auto Targeting)   → เร็ว แต่ control น้อย
-PATH B — Manual (Cowork ควบคุม Chrome) → ช้ากว่า แต่ control เต็ม
+PATH A — LINE AI Agent via Browser
+  เร็วสำหรับ campaign ง่าย ๆ แต่คุม audience ละเอียดไม่ได้
+
+PATH B — MCP Manual/API-first (default)
+  ใช้ MCP tools สร้าง campaign/adset/ad ผ่าน LINE Ads API
+  เหมาะกับ interest targeting, bid/cost cap, repeatable workflow
+
+PATH C — Browser Manual Fallback
+  ใช้เฉพาะสิ่งที่ API ทำไม่ได้ หรือ MCP error แล้วต้องตรวจ UI
 ```
 
-### Money Safety Rules — ห้ามเดาเรื่องเงิน
+### MCP Capability Map
+
+| งาน | Default |
+|---|---|
+| ดู campaign/adset/ad/report/status | MCP |
+| สร้าง campaign/adset/ad | MCP dry-run ก่อนเสมอ |
+| upload media | MCP |
+| interest targeting | MCP + `list_advanced_targeting_codes` |
+| KYC/account setup/card/payment | Browser + user self-fill |
+| LINE AI Campaign Agent | Browser |
+| Visual crop/preview QA | Browser/screenshot เฉพาะจุด |
+
+---
+
+## Money Safety Rules
 
 ```
 Hard stop:
-- ห้าม assume / default ราคาต่อผลลัพธ์ เช่น CPF, CPC bid, CPA target, bid cap
-- ห้าม assume / default งบรายวันหรืองบรวม
-- ต้องถาม user ให้ระบุเป็นตัวเลขก่อนสร้าง draft หรือส่งข้อมูลให้ LINE AI
-- ต้องทวนตัวเลขเงินในแผน และรอ user confirm ก่อนกรอก/สร้าง draft
-- ต้องรอ user confirm อีกครั้งก่อน submit/publish/บันทึกโฆษณา
-```
-
-ถ้า user ยังไม่รู้ราคาต่อผลลัพธ์:
-- อธิบายว่าเป็นเพดานราคาที่ระบบพยายามใช้ต่อ 1 result
-- เสนอช่วงอ้างอิงได้ แต่ห้ามเลือกแทน user
-- ถามให้ user เลือกตัวเลขเองก่อนเดินต่อ
-
-ตัวอย่าง:
-```
-ราคาต่อการเพิ่มเพื่อน (CPF) อยากตั้งเพดานไว้กี่บาทครับ?
-ผมเสนอช่วงให้คิดได้ แต่จะไม่เลือกแทน เพราะเป็นเรื่องค่าใช้จ่ายจริง
-```
-
-### ข้อจำกัดของ PATH A (AI Agent) ที่ต้องรู้ก่อน
-
-```
-✓ รองรับ 3 Objectives เท่านั้น:
-  - Friend Added (เพิ่มเพื่อน LINE OA)
-  - Website Click (การเข้าชมเว็บไซต์)
-  - Reach (การเข้าถึง)
-
-✗ ไม่รองรับ:
-  - Conversion (cv ของ LINE Tag)
-  - App Install / App Engagement
-  - Video Views
-
-✓ Targeting แบบ AUTO เท่านั้น:
-  - LINE Auto-Targeting เรียนรู้กลุ่มเองใน 48 ชม.แรก
-  - ใส่ Interest filter ได้ผ่านแชต **แต่ AI อาจไม่ apply เข้า form** (ฟอร์มจริงไม่มี Interest field ใน PATH A)
-  - คุมได้แค่: ประเทศ, พื้นที่, เพศ, อายุ, OS
-
-✗ ไม่รองรับ:
-  - Custom Audience (Phone list, Email list)
-  - Lookalike Audience
-  - LINE Tag Retargeting
-```
-
-### Switch Logic (ตัดสินใจก่อนเริ่ม)
-
-```
-ใช้ PATH A ถ้า:
-  ✓ user เพิ่งเริ่ม / ทดสอบตลาด
-  ✓ มี URL เว็บ / landing page (AI ดึงรูป + copy ให้)
-  ✓ Objective อยู่ใน 3 ตัวที่รองรับ
-  ✓ ไม่มี data ลูกค้าเก่า / ไม่ต้องการ Custom Audience
-
-ใช้ PATH B ถ้า:
-  ✗ มี data ลูกค้าเก่า อยากใช้ Custom Audience / Lookalike
-  ✗ ต้องการ Interest targeting ละเอียด
-  ✗ Objective = Conversion, App Install, Video View
-  ✗ user ไม่มี URL เว็บ
-  ✗ PATH A ล้มเหลว (error / timeout)
+- ห้าม assume งบรายวัน งบรวม bid cap CPF CPC CPA หรือ CPM
+- ต้องถาม user ให้ระบุเลขเงินก่อนสร้าง dry-run
+- ทุก write action ต้อง dry_run=True ก่อน
+- ต้องสรุป payload/ตัวเลขให้ user ตรวจ
+- ต้องได้คำว่า "ยืนยัน" หรือ "ทำได้เลย" ก่อน dry_run=False
+- ถ้าเปลี่ยนจำนวน adset/ad/creative จากแผนเดิม ต้อง confirm ใหม่
 ```
 
 ---
 
-## PHASE 0 — METHOD CHOICE
+## Phase 0 — Method Choice
 
-หลังรู้ว่า user ต้องการสร้างโฆษณา และก่อนเริ่มสร้าง campaign จริง ต้องให้ user เลือกวิธีสร้างเสมอ:
+หลังรู้ว่า user ต้องการสร้างโฆษณา ต้องให้ user เลือกวิธีสร้างก่อนเสมอ:
 
 ```
-สร้างแคมเปญได้ 2 วิธีครับ:
+สร้างแคมเปญได้ 3 วิธีครับ:
 
-1. AI Agent — เร็วกว่า ให้ LINE ช่วยสร้างรูป/copy/targeting อัตโนมัติ แต่คุม audience ละเอียดได้น้อย
-2. Manual Audience — ช้ากว่าและมีหลายช่องกว่า แต่กำหนด audience/interest/custom audience ได้ละเอียดกว่า
+1. MCP Manual/API-first — แนะนำ ใช้ API โดยตรง ประหยัด token และกำหนด audience/bid ได้ชัด
+2. LINE AI Agent — เร็วกว่า ให้ LINE ช่วยสร้างรูป/copy/auto targeting แต่คุม audience ละเอียดน้อย
+3. Browser Manual — ใช้หน้าเว็บเอง เหมาะกับงานที่ API ยังทำไม่ได้
 
 อยากใช้วิธีไหนครับ?
 ```
 
 บันทึกเป็น `campaign_creation_method`:
+- `MCP_MANUAL` = PATH B default
 - `AI_AGENT` = PATH A
-- `MANUAL_AUDIENCE` = PATH B
+- `BROWSER_MANUAL` = PATH C fallback
 
-ถ้า user ไม่แน่ใจ ให้แนะนำตามเงื่อนไขได้ แต่ต้องให้ user ยืนยันวิธีก่อน:
-```
-เคสนี้ผมแนะนำ AI Agent เพราะมี URL และ objective รองรับ แต่ถ้าอยากคุม audience ละเอียดให้เลือก Manual Audience ครับ
-จะใช้ AI Agent ไหมครับ?
-```
+ถ้า user ไม่แน่ใจ ให้แนะนำ `MCP_MANUAL` ยกเว้น user ต้องการใช้ LINE AI Agent หรือขั้นตอนเป็น KYC/payment/UI-only
 
 ---
 
-## PHASE 1 — INTAKE (ใช้ทั้ง 2 paths)
+## Phase 1 — Intake
 
-ถามทีละข้อได้ แต่ถ้า user ให้ข้อมูลมาหลายอย่างแล้ว ให้เติมเองและถามเฉพาะช่องที่ขาด:
+ถามเฉพาะข้อมูลที่ยังขาด:
 
-### Q1 — สินค้า/บริการ
-"อยากลงโฆษณาสินค้าหรือบริการอะไรครับ?"
-→ รับ: ชื่อสินค้า, ราคา, ช่องทางขาย
+| ข้อมูล | คำถาม | Required |
+|---|---|---|
+| สินค้า/บริการ | อยากลงโฆษณาสินค้าหรือบริการอะไรครับ? | ใช่ |
+| Objective | เพิ่มเพื่อน / เข้าเว็บ / Reach / Conversion / App install / Video | ใช่ |
+| Budget | งบประมาณต่อวันกี่บาทครับ? | ใช่ |
+| Bid/cost cap | CPF/CPC/CPA/bid cap อยากตั้งไว้กี่บาทครับ? | ถ้าใช้ cost cap |
+| Targeting | อายุ เพศ พื้นที่ interest/custom audience | ใช่ |
+| Creative | มีรูป/วิดีโอและข้อความไหม? | ก่อนสร้าง ad |
+| Landing/OA | URL หรือ LINE OA objective | ตาม objective |
 
-### Q2 — Objective
+### Objective Mapping
+
+| User พูดว่า | MCP/API objective |
+|---|---|
+| เพิ่มเพื่อน OA | `GAIN_FRIENDS` |
+| เข้าเว็บ | `WEBSITE_TRAFFIC` |
+| Conversion | `CONVERSIONS` |
+| Reach | `REACH` |
+| ติดตั้งแอป | `APP_INSTALL` |
+| ดูวิดีโอ | `VIDEO_VIEW` |
+
+### Bid Rules
+
 ```
-[ เพิ่มเพื่อน OA ]   → Friend Added       [Path A ✓ | Path B ✓]
-[ ให้คนเข้าเว็บ ]    → Website Clicks     [Path A ✓ | Path B ✓]
-[ ให้คนรู้จักแบรนด์ ] → Reach              [Path A ✓ | Path B ✓]
-[ ให้คนซื้อสินค้า ]  → Conversion         [Path A ✗ | Path B ✓]
-[ โปรโมทแอป ]       → App Install        [Path A ✗ | Path B ✓]
-[ ดูวิดีโอ ]         → Video View         [Path A ✗ | Path B ✓]
+เพิ่มเพื่อน OA → CPF/bid cap ต้องมาจาก user
+เข้าเว็บ → CPC/cost cap หรือ auto ต้องมาจาก user
+Conversion → CPA/cost cap ต้องมาจาก user
+Reach → CPM/auto ต้องมาจาก user
 ```
 
-⚠️ **ถ้า user เลือก Conversion / App Install / Video View** + เลือก PATH A
-→ แจ้ง: "Objective นี้ต้องใช้ PATH B (Manual) นะครับ ขอ switch ให้?"
+ถ้า user ยังไม่รู้ราคา ให้เสนอช่วงอ้างอิงได้ แต่ห้ามเลือกแทน
 
-### Q3 — งบ
-"งบประมาณต่อวันประมาณเท่าไหร่ครับ? (บาท)"
+---
 
-### Q4 — ราคาต่อผลลัพธ์ / Bid Cap
-ถามตาม objective:
+## Phase 2 — Recommend Plan
+
+ก่อนสร้างอะไรจริง ต้องสรุปแผน:
+
 ```
-เพิ่มเพื่อน OA → "ราคาต่อการเพิ่มเพื่อน (CPF) อยากตั้งเพดานไว้กี่บาทครับ?"
-เข้าเว็บ → "ถ้าจะตั้ง bid/cost cap ต่อคลิก อยากให้ไม่เกินกี่บาทครับ? ถ้าใช้ auto bid ให้ตอบ auto ได้"
-Reach → "ต้องการใช้ auto bid หรือมีเพดาน CPM/ค่าใช้จ่ายที่อยากคุมไหมครับ?"
-Conversion → "CPA target หรือ cost cap ต่อ conversion อยากตั้งไว้กี่บาทครับ?"
+สรุปแผน:
+- Method: MCP Manual/API-first
+- Objective: [objective]
+- Campaign: [name]
+- Budget: ฿[X]/วัน
+- Bid/cost cap: ฿[Y] [CPF/CPC/CPA/CPM]
+- Adset plan: [จำนวน + targeting]
+- Creative plan: [จำนวน ads + format]
+
+ยืนยันให้ผมทำ dry-run ตามนี้ไหมครับ?
 ```
+
+เมื่อ user ยืนยันแผน ให้เรียก MCP ด้วย `dry_run=True` ก่อนทุก write tool
+
+---
+
+## Phase 3 — PATH B: MCP Manual/API-first
+
+### Step B0 — Duplicate + Context Check
+
+ใช้ read tools ก่อนสร้าง:
+
+```
+1. list_campaigns
+2. ถ้ามี campaign คล้ายกัน ให้แจ้ง user ก่อนสร้างซ้ำ
+3. ถ้า objective = GAIN_FRIENDS ให้ list_audiences เพื่อหา active_friends_audience_id
+4. ถ้ามี interest ให้ list_advanced_targeting_codes ก่อน map code
+```
+
+### Step B1 — Create Campaign
+
+Tool: `create_campaign`
 
 Rules:
-- ถ้า objective มีช่อง CPF/CPA/bid cap ใน form หรือ AI Agent ถาม ต้องใช้ค่าจาก user เท่านั้น
-- ถ้า user ตอบ `auto` ได้เฉพาะ objective/flow ที่ LINE Ads รองรับ auto bid โดยไม่ต้องใส่ตัวเลข
-- ถ้า user ยังไม่ตอบ ห้ามเดินต่อไปสร้าง campaign/draft
+- ใช้ objective enum จาก API เท่านั้น เช่น `GAIN_FRIENDS`
+- เงินใช้ THB ใน tool แล้ว tool แปลงเป็น micro
+- dry-run ก่อนเสมอ
 
-### Q5 — URL Landing
-"มีเว็บไซต์หรือหน้า Landing Page ของสินค้าไหมครับ?"
-→ ถ้าไม่มี + เลือก PATH A → switch ไป PATH B (PATH A ต้องการ URL)
+Flow:
+
+```
+create_campaign(..., dry_run=True)
+แสดง payload
+รอ user ยืนยัน
+create_campaign(..., dry_run=False)
+read back ด้วย list_campaigns
+```
+
+### Step B2 — Create Adset
+
+Tool: `create_adset`
+
+สำหรับ `GAIN_FRIENDS`:
+
+```
+1. list_audiences
+2. หา `active_friends_audience_id`
+3. ใส่ใน `excluded_audience_ids`
+4. ใช้ bid_type="CPF"
+5. ใช้ auto_bid_type="FRIEND"
+6. ถ้า bid_strategy="COST_CAP" ต้องมี bid_amount จาก user
+```
+
+### Interest Targeting
+
+ห้ามส่งชื่อ interest ตรง ๆ เช่น `Marketing`, `Branding`, `Business`
+
+```
+1. list_advanced_targeting_codes(campaign_objective="GAIN_FRIENDS", country="TH", locale="th")
+2. เลือกเฉพาะ code ที่ selectable=true
+3. ส่งผ่าน `interest_codes`
+4. เมื่อมี `interest_codes` tool ต้องใช้:
+   targetingMode="MANUAL"
+   includeAdvancedTargetings=[{"interests": ["..."]}]
+```
+
+Live-tested mapping:
+
+| User พูดว่า | LINE Ads code |
+|---|---|
+| Marketing / Branding / Advertising / Business | `4` = อาชีพและธุรกิจ |
+
+ตัวอย่าง payload ที่ถูก:
+
+```json
+{
+  "targeting": {
+    "targetingMode": "MANUAL",
+    "ageMin": 25,
+    "ageMax": 44,
+    "country": "TH",
+    "excludedCustomAudienceIds": ["5343822743474"],
+    "includeAdvancedTargetings": [
+      { "interests": ["4"] }
+    ]
+  }
+}
+```
+
+### Age Brackets
+
+LINE Ads ใช้ bracket เฉพาะ:
+
+| ageMin | ageMax |
+|---|---|
+| 20 | 24 |
+| 25 | 29 |
+| 30 | 34 |
+| 35 | 39 |
+| 40 | 44 |
+| 45 | 54 |
+| 55 | 65 |
+
+ถ้า user บอก "28-45" ให้เสนอปรับเป็น `25-44` หรือ `25-54` แล้วรอ confirm
+
+### Step B3 — Upload Media
+
+Tool: `upload_media`
+
+Rules:
+- รองรับ JPG/PNG/MP4/MOV
+- รูปแนะนำ `1080x1080` หรือ `1200x628`
+- ถ้า API ตอบ `INVALID_IMAGE_SIZE` ให้ user แก้ไฟล์ก่อน
+- upload media เป็น write action ต้อง confirm ก่อน `dry_run=False`
+
+Flow:
+
+```
+upload_media(file_path, dry_run=True)
+รอ user ยืนยันให้อัปโหลด
+upload_media(file_path, dry_run=False)
+เก็บ imageHash จาก response.object.obsHash
+```
+
+### Step B4 — Create Ad
+
+Tool: `create_ad`
+
+สำหรับ `GAIN_FRIENDS`:
+
+```
+call_to_action="ADD_FRIEND"
+destination_url ไม่จำเป็น
+creative เป็น nested object
+imageHash จาก upload_media
+```
+
+Flow:
+
+```
+create_ad(..., dry_run=True)
+แสดง payload
+รอ user ยืนยันสร้าง Ad
+create_ad(..., dry_run=False)
+read back ด้วย list_ads / get_ad_status
+```
+
+Live-tested result:
+- create ad สำเร็จผ่าน MCP
+- image review อาจ `APPROVED`
+- creative review อาจ `IN_REVIEW`
+- delivery อาจ `NOT_DELIVERING` ถ้า campaign/adset paused
 
 ---
 
-## PHASE 2 — RECOMMEND
+## PATH A — LINE AI Campaign Agent via Browser
 
-```
-📋 แผนที่ผมแนะนำครับ
+ใช้เมื่อ user ต้องการให้ LINE AI ช่วยคิดรูป/copy/auto targeting และ objective อยู่ในกลุ่มที่รองรับ
 
-🎯 Objective: [objective] — เพราะ [เหตุผล]
-💰 Budget: ฿[X]/วัน | Bidding: [strategy]
-💸 Cost cap/Bid: [CPF/CPA/CPC/Auto จาก user]
-🛠️ PATH: [A/B] — [เหตุผลที่เลือก]
-👥 Targeting: [auto/manual]
-🎨 Ad Set Strategy: [จำนวน ad set]
-🎨 Creative Plan: [จำนวน creative/ad ที่จะสร้าง]
+ข้อจำกัด:
+- Targeting เป็น Auto เป็นหลัก
+- Interest/custom audience คุมละเอียดไม่ได้
+- ต้องใช้ browser/Cowork เพราะเป็น UI-only
 
-ยืนยัน method + budget + bid/cost cap + targeting + creative plan นี้ไหมครับ?
-```
-
-→ user ไม่เห็นด้วย → ถามเพื่อเข้าใจก่อน วน loop สูงสุด 3 รอบ
+ต้องทำตาม safety เดิม:
+- งบและ bid ต้องมาจาก user
+- สร้าง 3 creative ตามแผนเดิม ยกเว้น user confirm จำนวนอื่น
+- ถ้าสร้างได้น้อยกว่าที่ตกลง ต้องหยุดถามก่อน submit
+- screenshot เฉพาะ crop/preview/error
 
 ---
 
-## 🆕 AD SET STRATEGY (เพิ่มใหม่)
+## PATH C — Browser Manual Fallback
 
-### กฎทั่วไป — สร้างกี่ Ad Set?
+ใช้เมื่อ:
+- MCP tool ยังไม่รองรับ endpoint นั้น
+- API permission ไม่พอ
+- ต้องทำ KYC/payment/UI-only
+- ต้องตรวจ visual preview ที่ API อ่านไม่ได้
 
-**สำหรับ PATH A (AI Agent — Auto Targeting):**
-```
-✓ 1 Ad Set + 3-5 Creatives
-   → AI Auto-Targeting จัดการ audience เอง
-   → A/B test ที่ Creative แทน
-   → 3 Creative อย่างน้อย: 
-      - Creative 1: Personal brand (รูปคน + credentials)
-      - Creative 2: Product/Service (รูปงาน + benefit)
-      - Creative 3: Social proof (รูป client logo / testimonial)
-```
+Entry mode:
+- `SELF_FILL`: user กรอกเองบนหน้าเว็บ, agent ช่วย checklist + ตรวจ error
+- `AI_ASSISTED`: agent กรอกให้หลัง user confirm, ใช้ DOM/interactive ก่อน screenshot
 
-**สำหรับ PATH B (Manual — กำหนดเอง):**
-```
-✓ 3 Ad Sets (A/B/C) + Creative ตาม set
-   Ad Set A — Broad Targeting    (อายุ + พื้นที่ ไม่จำกัด interest)
-   Ad Set B — Interest Targeting (อายุ + พื้นที่ + interest เฉพาะ)
-   Ad Set C — Custom/Lookalike   (Phone list, Email list, LINE Tag retarget)
-   
-   → แต่ละ set ใช้ creative ที่ตรงกับ targeting
-   → หลัง 7-14 วัน ดู set ไหน CPF ต่ำสุด → scale set นั้น
-```
-
-### Decision Tree
-```
-มี data ลูกค้าเก่า (Phone/Email > 1,000 records)?
-  YES → Ad Set C ทำได้ (Custom + Lookalike) → 3 sets
-  NO  → 2 sets (Broad + Interest) ก็พอ
-  
-งบ < ฿500/วัน?
-  YES → 1 set พอ (data ไม่พอจะเรียนรู้หลาย set)
-  NO  → 3 sets เต็มสูตร
-```
+Sensitive upload เช่น phone/email customer list ให้ default เป็น `SELF_FILL`
 
 ---
 
-## PATH A — LINE AI Campaign Agent
+## Ad Set Strategy
 
-### Step A1: Navigate
-```
-1. เปิด admanager.line.biz/adaccount/{ID}/campaign/
-2. คลิกปุ่ม "+ สร้าง AI แคมเปญ (beta)"
-3. ⚠️ ครั้งแรก: ขอ user ยอมรับ Terms ของ LINE Ads AI Agents
-```
+สำหรับงบน้อยกว่า ฿500/วัน:
+- ใช้ 1 adset ก่อน เพื่อให้ data ไม่กระจาย
 
-### Step A2: Feed info ให้ LINE AI
-ส่งทีละข้อความ ตามลำดับที่ AI ถาม:
-```
-1. เลือก objective (จาก 3 ที่เลือกได้)
-2. ส่ง: ชื่อแบรนด์ + บริการ + ราคา
-3. ส่ง: URL landing
-4. ส่ง: CPF max bid (ถ้า Friend Added) — ใช้ตัวเลขที่ user ระบุเท่านั้น ห้ามเดา
-5. ส่ง: daily budget — ใช้ตัวเลขที่ user ระบุเท่านั้น ห้ามเดา
-```
+สำหรับงบมากกว่า/เท่ากับ ฿500/วัน:
+- Broad adset
+- Interest adset
+- Custom/lookalike adset ถ้ามีข้อมูลลูกค้าเพียงพอและ feature เปิดแล้ว
 
-### Step A3: AI สรุป + ขอ refine
-AI จะสรุป:
-- อุตสาหกรรม
-- รายละเอียดแบรนด์ (จาก URL)
-- จุดขายสำคัญ
-- กลุ่มเป้าหมายที่แนะนำ (อายุ + พื้นที่)
-
-⚠️ **AI ใช้ Auto-Targeting** — ถ้า user ขอ "เพิ่ม Interest" ในแชต AI จะตอบว่ารับทราบ แต่ form จริงไม่มีฟิลด์ Interest → คุมได้แค่ อายุ พื้นที่ เพศ OS
-
-```
-ถาม user:
-"AI สรุปแบบนี้ ปรับอะไรเพิ่มไหม?
-- อายุ (ตอนนี้: [X-Y])
-- พื้นที่ (ตอนนี้: [list])
-- เพศ (ตอนนี้: [all/M/F])
-
-ส่วน Interest ปรับไม่ได้ใน PATH A — ถ้าจำเป็นต้อง switch ไป PATH B"
-```
-
-### Step A4: AI สร้างฟอร์ม → Cowork ตรวจ
-หลังกด "สร้าง" AI generate:
-- Form Campaign settings (ชื่อ, budget, ระยะเวลา)
-- Targeting fields (auto-fill ตามที่คุยในแชต)
-- 6 รูป recommended + 3 ชุด text recommended
-
-### Step A5: ประกอบ Creative + บันทึก
-```
-Default plan สำหรับ PATH A คือ 3 creative ขั้นต่ำ ยกเว้น user ยืนยันจำนวนอื่นก่อนเริ่ม
-
-For each Creative (ตามจำนวนที่ user confirm):
-  1. อ่าน interactive elements ก่อน
-  2. คลิก "เลือก" บนรูป
-  3. screenshot เฉพาะ crop/preview เพราะเป็น visual QA
-  4. ตัดขอบ default 1080x1080 → "อัปโหลด"
-  5. คลิก radio ชื่อ + คำอธิบาย ที่จะใช้
-  6. คลิก "ใช้ชิ้นงานโฆษณานี้" → counter +1
-  
-→ แนะนำ: บันทึก 3 ชิ้นงาน (ชุด 1, 2, 3 + รูปต่างกัน) เพื่อ A/B test
-```
-
-ถ้าระหว่างทำสร้างได้ไม่ครบจำนวนที่ confirm:
-```
-หยุดก่อน submit แล้วแจ้ง user:
-"ตอนแรกตกลงไว้ [N] creative แต่ตอนนี้สร้างได้ [M] creative เพราะ [เหตุผล]
-จะให้ผมส่งด้วย [M] ชิ้นงานเลย หรือแก้/สร้างเพิ่มให้ครบ [N] ก่อนครับ?"
-```
-
-ห้ามลดจำนวน creative/ad set จากแผนเองโดยไม่ confirm
-
-### Step A6: ตรวจ Targeting + Submit
-```
-1. คลิก "แก้ไข" พื้นที่ → เลือกจังหวัดตามแผน
-2. ตรวจ อายุ / เพศ / OS
-3. ดู audience size — ถ้า > 10M ลองแคบลง
-4. สรุปจำนวน creative จริง + budget + CPF/bid/cost cap + targeting
-5. รอ user พิมพ์ "ยืนยัน"
-6. คลิก "บันทึกโฆษณา ([N])"
-```
+อย่าลดจำนวน adset/ad จากแผนที่ user confirm เอง
 
 ---
 
-## PATH B — Cowork Manual
+## Final Review
 
-*โหลด knowledge/interest-catalog.md และ knowledge/bidding-strategy.md เพิ่ม*
-
-### PATH B Entry Mode
-
-ก่อนกรอก manual form ให้ user เลือกวิธีทำ:
+ก่อน write จริงรอบสุดท้าย:
 
 ```
-Manual form มีหลายช่องครับ อยากทำแบบไหนดี?
+สรุปก่อนสร้างจริง:
+- Campaign: [ชื่อ/ID] | Objective | ฿[X]/วัน
+- Adset: [ชื่อ/ID] | Bid ฿[Y] | Targeting summary
+- Ads: [จำนวน] | creative format | review status ถ้ามี
+- สถานะหลังสร้าง: active/paused ตามแผน
 
-1. กรอกเองบนหน้าเว็บ — ประหยัด token/เร็วกว่า ผมช่วยบอกช่องสำคัญและตรวจก่อน submit
-2. ให้ผมถามในแชทแล้วกรอกให้ — ง่ายกว่า แต่ใช้ token/เวลามากกว่า
-
-แนะนำ: ถ้าข้อมูลพร้อมและอยากประหยัด เลือก 1 ครับ
-```
-
-บันทึกเป็น `campaign_entry_mode`:
-- `SELF_FILL` = user กรอก campaign/ad set/ad เอง, Cowork ช่วยนำทาง + checklist + ตรวจ preview/error
-- `AI_ASSISTED` = Cowork ถามข้อมูลในแชท, สรุปให้ user ยืนยัน, แล้วกรอก form เป็น batch
-
-ถ้า user ไม่แน่ใจ ให้ default เป็น `SELF_FILL` สำหรับ PATH B เพราะ form ยาวและกิน token ง่าย
-
-ทั้งสอง mode ยังต้องรอ user confirm ชัดเจนก่อน submit/publish หรือ action ที่ใช้เงิน
-
-### Step B1: Campaign
-```
-Navigate: admanager → "+ สร้างแคมเปญ" (ปุ่มเขียวซ้าย — ไม่ใช่ AI)
-กรอก:
-  - วัตถุประสงค์: [map จาก Q2 — รวม Conversion ที่ AI Agent ทำไม่ได้]
-  - ชื่อ: [auto-generate]
-  - งบ: [จาก Q3 — user ระบุเท่านั้น ห้ามเดา]
-```
-
-ถ้า `campaign_entry_mode = SELF_FILL`:
-- แสดง checklist compact ของ field สำคัญ
-- เปิดหน้าให้ user กรอกเอง
-- หลัง user บอกว่าเสร็จ ให้ Cowork อ่าน interactive/DOM เพื่อตรวจ required field/error
-
-ถ้า `campaign_entry_mode = AI_ASSISTED`:
-- สรุป field ที่จะกรอก และรอ user confirm
-- กรอกหลายช่องเป็น batch ด้วย ref/form input
-- อ่าน interactive/DOM หลัง major step แทน screenshot
-
-### Step B2: Ad Sets — สร้าง 3 set ตามกลยุทธ์
-
-**Ad Set A — Broad:**
-```
-Audience: ประเทศ + อายุ + เพศ (ไม่จำกัด interest)
-Bidding: Auto / Lowest CPF
-```
-
-**Ad Set B — Interest:**
-```
-Audience: + Interest categories (3-5 หมวด)
-Bidding: Manual CPF based on user-confirmed bid/cost cap
-```
-
-**Ad Set C — Custom/Lookalike:**
-```
-ถาม: "มีเบอร์โทร/อีเมลลูกค้าเก่าไหม? ถ้ามีกี่ราย?"
-→ < 1,000 records: ข้าม set นี้ (ไม่พอสร้าง audience)
-→ ≥ 1,000: upload + สร้าง Lookalike 1-3%
-```
-
-Sensitive upload rule:
-- Custom Audience ที่มีเบอร์โทร/อีเมลลูกค้า ให้ default เป็น `SELF_FILL`
-- Cowork ห้ามอ่าน/คัดลอก/สรุปข้อมูลในไฟล์ลูกค้า
-- Cowork ช่วยได้เฉพาะนำทาง, บอก format, ตรวจว่า upload สำเร็จหรือมี error
-- ถ้า user ขอให้ AI-assisted ในขั้นนี้ ให้ยืนยันว่าไม่มีข้อมูล sensitive ที่ต้องให้ AI อ่าน
-
-### Step B3-4: Creative + Copy
-
-ก่อน upload/crop creative ให้เลือก mode เฉพาะถ้าต้องทำหลายชิ้นหรือ user อยากประหยัด token:
-
-- `SELF_FILL`: user เลือกรูป/ครอปเอง, Cowork ตรวจ preview ก่อน submit
-- `AI_ASSISTED`: Cowork ช่วยเลือกรูป/ข้อความ, ใช้ screenshot เฉพาะ crop/preview เพราะเป็น visual QA
-
-Default:
-- ถ้า user มีไฟล์/ข้อความพร้อม -> `SELF_FILL`
-- ถ้า user อยากให้ช่วยเลือก creative/copy -> `AI_ASSISTED`
-
----
-
-## PHASE 3 — FINAL REVIEW
-
-```
-═══════════════════════════════
-📋 สรุปก่อน Submit
-═══════════════════════════════
-📁 Campaign: [ชื่อ] | ฿[X]/วัน | [Objective]
-💸 Bid/Cost cap: [ตัวเลขจาก user หรือ Auto ถ้ารองรับ]
-👥 Ad Set(s): [จำนวน] | [targeting summary]
-🎨 Ad(s): [จำนวนที่ตกลง] | [จำนวนที่สร้างจริง] | [format] | [URL]
-═══════════════════════════════
-[ ✅ ยืนยัน สร้างเลย ] [ ✏️ แก้ไข ]
-```
-
-ถ้า `จำนวนที่สร้างจริง` ไม่เท่ากับ `จำนวนที่ตกลง`:
-- ห้าม submit
-- ถาม user ว่าจะส่งเท่าที่มี หรือให้สร้างเพิ่ม/แก้ก่อน
-
----
-
-## PHASE 4 — POST-SUBMIT
-
-```
-✅ Campaign: [ชื่อ] — สร้างแล้ว
-✅ Ad Set(s): [จำนวน] sets — สร้างแล้ว
-⏳ Ad(s): [จำนวน] ชิ้นงาน — รอ LINE ตรวจสอบ (~24 ชั่วโมง)
-```
-
-เสนอ Schedule Report (MODE 3) ทันที
-
----
-
-## ERROR HANDLING
-
-**LINE AI Agent error:**
-```
-แจ้ง user → switch PATH B โดยใช้ข้อมูลที่เก็บไว้จาก INTAKE
-```
-
-**Ad Reject:**
-```
-อ่าน rejection reason → แปลภาษาไทย → แนะนำวิธีแก้
-แก้ได้ → resubmit | แก้ไม่ได้ → alternative
-```
-
-**Auto-Targeting ไม่ delivery (Friend Added 0):**
-```
-หลัง 24-48 ชม.:
-- Impression > 0 + Friend = 0 → CPF max ต่ำเกิน → ขยับขึ้น
-- Impression = 0 → audience แคบเกิน หรือ ad ยังไม่ approve
+พิมพ์ "ยืนยัน" เพื่อดำเนินการจริง
 ```
 
 ---
 
-## 🆕 TOKEN OPTIMIZATION (สำหรับ Cowork Agent)
+## Post-submit
 
-ลด token ใช้ตอน execute workflow:
+หลังสร้าง:
 
-### 1) Browser Interaction
 ```
-✅ อ่านหน้าแบบ interactive/DOM ก่อน screenshot
-   → ได้ ref_X/label ของปุ่มโดยไม่ต้องอ่านภาพทั้งหน้า
-   
-✅ Batch action ที่ปลอดภัย เช่น click + wait + read_page
-   → 1 round trip vs 3 round trips
-   
-✅ find() แทน screenshot เมื่อรู้ว่าหา element ชื่ออะไร
-   → return ref_X อย่างเดียว ไม่มีภาพ
-   
-❌ หลีกเลี่ยง: screenshot หลัง action ทุกครั้งโดยไม่จำเป็น
-   → ใช้ screenshot เฉพาะ visual QA, preview ก่อน submit, error
+✅ Campaign: [ID]
+✅ Adset: [ID]
+✅ Ad: [ID]
+⏳ Creative review: [status]
+📌 Delivery status: [status + reasons]
 ```
 
-### 2) Text Output
-```
-✅ Compact tables แทน bullet lists ยาวๆ
-✅ ใช้ "1 หรือ 2?" แทน [A] [B] [C] [D] เมื่อตัวเลือกมีแค่ 2
-✅ ตัด re-quote AI response ที่ user เพิ่งเห็นในหน้าจอ
-✅ ตัด preamble "ได้เลยครับ" / "เริ่มเลย" ที่ไม่จำเป็น
-
-❌ หลีกเลี่ยง: long markdown tables ที่มี 5-6 columns
-❌ หลีกเลี่ยง: emoji ทุกบรรทัด — ใช้เฉพาะตอน highlight สำคัญ
-```
-
-### 3) Decision Points
-```
-✅ Default + opt-out: "จะใช้ A นะครับ พิมพ์ 'B' ถ้าไม่ต้องการ"
-   → ถ้า user เห็นด้วยก็ตอบสั้นๆ ได้
-   
-✅ Bundle confirmations: "ยืนยัน targeting + creative + budget?"
-   → 1 confirm vs 3 confirms
-   
-❌ หลีกเลี่ยง: ถามทุก step เล็กๆ ที่ user ไม่จำเป็นต้องตัดสินใจ
-```
-
-### 4) Read File เฉพาะที่ต้องการ
-```
-✅ Read 02-campaign.md เท่านั้นเมื่อ MODE 2
-✅ ไม่ load knowledge files ทั้งหมดล่วงหน้า
-   → load interest-catalog.md เฉพาะตอนถึง PATH B Step B2
-   → load bidding-strategy.md เฉพาะตอนตั้ง bid manual
-```
+เสนอ MODE 3 report schedule ต่อทันที
 
 ---
 
-## NOTES สำหรับ Cowork Agent
+## Error Handling
 
-1. **Method choice required** — ต้องให้ user เลือก AI Agent หรือ Manual Audience ก่อนสร้าง campaign จริง
-2. **PATH A = 3 obj + auto target** — ห้ามสัญญา feature ที่ไม่มี
-3. **Money inputs required** — งบและ CPF/CPA/bid cap ห้าม assume ต้องมาจาก user เท่านั้น
-4. **Creative count integrity** — ถ้าทำไม่ครบจำนวนที่ตกลง ห้ามลดเอง ต้องถาม user
-5. **3 Ad Set rule** — แจ้งให้ user รู้แต่ไม่บังคับ ขึ้นกับ data + งบ
-6. **Token discipline** — batch + minimal screenshot
-7. **เช็ค duplicate ก่อนสร้าง** — บัญชีอาจมี campaign เดียวกันอยู่แล้ว
+| Error | วิธีจัดการ |
+|---|---|
+| `INVALID_IMAGE_SIZE` | ให้ user แก้รูปเป็น 1080x1080 หรือ 1200x628 |
+| `401` | ตรวจ Access Key/Secret/signature |
+| `403` | แจ้งว่า feature/permission อาจยังไม่เปิด |
+| `404` ตอน update | เช็ค method ก่อน: LINE update ใช้ POST ไม่ใช่ PUT |
+| creative `IN_REVIEW` | แจ้งว่ารอ LINE review |
+| `CAMPAIGN_PAUSED` / `ADGROUP_PAUSED` | แจ้งว่าสร้างแล้วแต่ยังไม่ deliver |
 
 ---
 
-*Version 2.0 | May 2026*
-*Updated:*
-*- เพิ่ม PATH A constraints (3 obj, auto-targeting only)*
-*- เพิ่ม PHASE 0 Method Choice*
-*- เพิ่ม Ad Set Strategy section (1 vs 3 sets)*
-*- เพิ่ม Token Optimization guide*
-*- เพิ่ม Money Safety Rules: ห้าม assume งบ/CPF/CPA/bid cap*
-*- เพิ่ม Creative count integrity rule*
+## Token Discipline
+
+สำหรับ MCP path:
+- ใช้ tool call แทน browser/screenshot
+- แสดง payload แบบ compact เฉพาะ field สำคัญ
+- read back ด้วย list/get tools หลัง write
+
+สำหรับ browser fallback:
+- อ่าน DOM/interactive ก่อน screenshot
+- screenshot เฉพาะ visual QA, preview, crop, error
+- batch action ที่ปลอดภัย
+
+---
+
+## Notes
+
+1. MCP-first เป็น default สำหรับ campaign creation
+2. Browser ใช้เฉพาะ UI-only หรือ fallback
+3. Money inputs ต้องมาจาก user เท่านั้น
+4. dry-run ก่อน write จริงทุกครั้ง
+5. เช็ค duplicate ก่อนสร้าง
+6. ใช้ official codes สำหรับ interest เท่านั้น
+7. ไม่มี delete tools ใช้ pause แทน
+
+---
+
+*Version 3.0 | May 2026*
+*Updated: MCP-first architecture, interest code lookup, media upload/create_ad flow, API write safety, browser fallback scope*
