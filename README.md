@@ -8,7 +8,7 @@ MCP server สำหรับให้ Claude เรียก LINE Ads API v3 �
 
 ---
 
-## สำหรับนักการตลาด — ใช้งานผ่าน Claude หรือ ChatGPT
+## สำหรับนักการตลาด — ใช้งานผ่าน AI
 
 ไม่ต้องเขียนโค้ด ไม่ต้องเปิด LINE Ads Manager ทุกครั้ง — คุยกับ AI แล้วให้มันดึงข้อมูลและจัดการ campaign แทน
 
@@ -79,18 +79,32 @@ Claude Desktop รองรับ MCP โดยตรง ใช้งานไ�
 
 ---
 
-### วิธีใช้กับ ChatGPT (ผ่าน Custom GPT + Actions)
+### วิธีใช้กับ OpenAI Codex (สำหรับทีม technical / system operator)
 
-ChatGPT ยังไม่รองรับ MCP โดยตรง แต่สามารถเชื่อมผ่าน **OpenAPI wrapper** ได้
+[Codex](https://codex.com) เป็น AI coding agent ของ OpenAI ที่รันโค้ด Python ได้โดยตรง
+ไม่ต้องผ่าน MCP protocol — Codex import tools แล้วเรียกใช้งานได้เลย
 
 **ขั้นตอน:**
 
-1. Deploy MCP server นี้เป็น REST API (เช่นผ่าน FastAPI wrapper หรือ Cloudflare Worker)
-2. สร้าง Custom GPT → เพิ่ม Action → import OpenAPI schema ที่ wrap tools เหล่านี้
-3. ChatGPT จะเรียก LINE Ads API ผ่าน Action ได้เหมือน Claude
+1. **เปิด Codex แล้ว clone repo นี้เข้า environment**
+   ```bash
+   git clone https://github.com/ongkub/line-ads-mcp.git
+   cd line-ads-mcp
+   pip install -e .
+   ```
 
-> หมายเหตุ: วิธีนี้ต้องมีคนช่วย deploy server ขึ้น cloud ก่อน ไม่ได้รันบน local เหมือน Claude Desktop
-> สำหรับ setup แบบ production พร้อมใช้ สามารถติดต่อ [Spark Factor](https://sparkth.io) ได้เลย
+2. **ตั้งค่า `.env`** เหมือน Claude Desktop (ข้อ 2 ด้านบน)
+
+3. **บอก Codex ว่าต้องการทำอะไร** ได้เลย เช่น:
+   ```
+   ดึง campaign ทั้งหมดแล้วสรุป performance 7 วันล่าสุด
+   ```
+   ```
+   สร้าง campaign เพิ่มเพื่อน งบ 300 บาท/วัน แล้วแสดง payload ให้ confirm ก่อน
+   ```
+
+Codex จะ import tools จาก `src/line_ads_mcp/tools/` แล้วเรียกใช้โดยตรง
+กฎความปลอดภัย `dry_run=True` ยังทำงานเหมือนเดิม
 
 ---
 
