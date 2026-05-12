@@ -28,5 +28,16 @@ or in Thai:
 This software was built with knowledge gained through the LINE Certified
 Coach program and direct collaboration with LINE Thailand.
 
+---
+
+AI COLLABORATORS
+
+This project was developed with significant assistance from AI coding agents:
+
+  - OpenAI Codex (o3)  — primary scaffold, auth layer, tool architecture
+  - Anthropic Claude   — payload verification, API probing, test suite
+
+---
+
 For commercial licensing inquiries or custom integrations, contact:
   support@sparkth.io
