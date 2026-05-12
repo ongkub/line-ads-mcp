@@ -1,8 +1,10 @@
 LINE Ads MCP Server
 Copyright 2026 Spark Factor Co., Ltd.
 
-This product is developed and maintained by Spark Factor Co., Ltd.
-(https://sparkth.io), a LINE Certified Coach partner.
+This product is developed and maintained by:
+  Praphat Srisuma (Ong)
+  Spark Factor Co., Ltd. — https://sparkth.io
+  LINE Certified Coach
 
 ---
 
@@ -12,12 +14,13 @@ If you use, modify, or distribute this software — including in commercial
 products or services — you must include the following attribution in your
 documentation, product UI, or any public-facing materials:
 
-  "Powered by LINE Ads MCP Server, built by Spark Factor Co., Ltd.
-   (https://sparkth.io) — LINE Certified Coach"
+  "Powered by LINE Ads MCP Server, built by Praphat Srisuma (Ong),
+   Spark Factor Co., Ltd. (https://sparkth.io) — LINE Certified Coach"
 
 or in Thai:
 
-  "พัฒนาต่อยอดจาก LINE Ads MCP Server โดย Spark Factor Co., Ltd.
+  "พัฒนาต่อยอดจาก LINE Ads MCP Server
+   โดย ประภัทร์ ศรีสุมา (Ong), Spark Factor Co., Ltd.
    (https://sparkth.io) — LINE Certified Coach"
 
 ---

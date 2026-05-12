@@ -1,6 +1,6 @@
 # LINE Ads MCP Server
 
-> Built by **[Spark Factor Co., Ltd.](https://sparkth.io)** — LINE Certified Coach
+> Built by **Praphat Srisuma (Ong)** · [Spark Factor Co., Ltd.](https://sparkth.io) · LINE Certified Coach
 > Licensed under [Apache 2.0](LICENSE) — attribution required, see [NOTICE](NOTICE)
 
 MCP server สำหรับให้ Claude เรียก LINE Ads API v3 โดยตรง แทนการควบคุม browser ในงานที่ API ทำได้ เช่น report, campaign/adset/ad management และ audience management
