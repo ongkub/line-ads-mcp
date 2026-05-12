@@ -6,6 +6,98 @@
 
 MCP server สำหรับให้ Claude เรียก LINE Ads API v3 โดยตรง แทนการควบคุม browser ในงานที่ API ทำได้ เช่น report, campaign/adset/ad management และ audience management
 
+---
+
+## สำหรับนักการตลาด — ใช้งานผ่าน Claude หรือ ChatGPT
+
+ไม่ต้องเขียนโค้ด ไม่ต้องเปิด LINE Ads Manager ทุกครั้ง — คุยกับ AI แล้วให้มันดึงข้อมูลและจัดการ campaign แทน
+
+### วิธีใช้กับ Claude Desktop (แนะนำ)
+
+Claude Desktop รองรับ MCP โดยตรง ใช้งานได้เลยหลัง setup ครั้งเดียว
+
+**ขั้นตอน:**
+
+1. **ติดตั้ง Python และ repo นี้**
+   ```bash
+   git clone https://github.com/ongkub/line-ads-mcp.git
+   cd line-ads-mcp
+   python -m venv .venv && source .venv/bin/activate
+   pip install -e .
+   ```
+
+2. **ตั้งค่า credentials ใน `.env`**
+   ```bash
+   cp .env.example .env
+   # แก้ไขไฟล์ .env ใส่ Access Key / Secret Key จาก LINE Ads Manager
+   # (Settings → API Management)
+   LINE_ADS_ACCESS_KEY=your_access_key
+   LINE_ADS_SECRET_KEY=your_secret_key
+   LINE_ADS_AD_ACCOUNT_ID=A_xxxxxxxxxxxx
+   ```
+
+3. **เพิ่ม MCP server ใน Claude Desktop**
+
+   เปิดไฟล์ config ของ Claude Desktop:
+   - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+   - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+
+   เพิ่ม block นี้:
+   ```json
+   {
+     "mcpServers": {
+       "line-ads": {
+         "command": "/absolute/path/to/.venv/bin/python",
+         "args": ["-m", "line_ads_mcp.server"],
+         "cwd": "/absolute/path/to/line-ads-mcp",
+         "env": {
+           "LINE_ADS_ACCESS_KEY": "your_key",
+           "LINE_ADS_SECRET_KEY": "your_secret",
+           "LINE_ADS_AD_ACCOUNT_ID": "A_xxxxxxxxxxxx"
+         }
+       }
+     }
+   }
+   ```
+
+4. **Restart Claude Desktop แล้วคุยได้เลย**
+
+**ตัวอย่างที่พิมพ์ใน Claude:**
+```
+ดู campaign ที่รันอยู่ทั้งหมดให้หน่อย
+```
+```
+สรุปผล 7 วันที่ผ่านมาให้หน่อย campaign ไหน CPF ถูกที่สุด
+```
+```
+หยุด campaign "เพิ่มเพื่อน: ..."  ชั่วคราวก่อน — ดูผลก่อนว่าจะเปิดต่อดีไหม
+```
+
+---
+
+### วิธีใช้กับ ChatGPT (ผ่าน Custom GPT + Actions)
+
+ChatGPT ยังไม่รองรับ MCP โดยตรง แต่สามารถเชื่อมผ่าน **OpenAPI wrapper** ได้
+
+**ขั้นตอน:**
+
+1. Deploy MCP server นี้เป็น REST API (เช่นผ่าน FastAPI wrapper หรือ Cloudflare Worker)
+2. สร้าง Custom GPT → เพิ่ม Action → import OpenAPI schema ที่ wrap tools เหล่านี้
+3. ChatGPT จะเรียก LINE Ads API ผ่าน Action ได้เหมือน Claude
+
+> หมายเหตุ: วิธีนี้ต้องมีคนช่วย deploy server ขึ้น cloud ก่อน ไม่ได้รันบน local เหมือน Claude Desktop
+> สำหรับ setup แบบ production พร้อมใช้ สามารถติดต่อ [Spark Factor](https://sparkth.io) ได้เลย
+
+---
+
+### ความปลอดภัยสำหรับนักการตลาด
+
+- **ทุก action ที่เกี่ยวกับเงิน** (สร้าง campaign, ตั้ง budget, สร้าง ad) จะ **แสดง preview ก่อนเสมอ** — AI ต้องขอ confirm ก่อนส่งจริง
+- **ไม่มีปุ่มลบ** — ไม่มี tool สำหรับลบ campaign/ad/adset ในชุดนี้
+- Credentials เก็บใน `.env` บนเครื่องคุณเอง ไม่ผ่านเซิร์ฟเวอร์ภายนอก
+
+---
+
 ## Setup
 
 ```bash
