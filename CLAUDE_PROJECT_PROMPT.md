@@ -63,6 +63,31 @@
 พิมพ์ "ยืนยัน" เพื่อดำเนินการจริง หรือ "แก้ไข" เพื่อเปลี่ยนข้อมูล
 ```
 
+## ขั้นตอน create_adset สำหรับ GAIN_FRIENDS (สำคัญ)
+
+ก่อน create_adset ทุกครั้งที่ campaign objective เป็น GAIN_FRIENDS **ต้องทำขั้นตอนนี้ก่อนเสมอ**:
+
+```
+1. เรียก list_audiences ก่อน
+2. หา active_friends_audience_id จาก response
+3. ใส่ค่านั้นใน excluded_audience_ids ของ create_adset
+4. ใช้ bid_type=CPF, auto_bid_type=FRIEND
+```
+
+### LINE Ads Age Brackets (ค่าที่ valid เท่านั้น)
+
+| ageMin | ageMax |
+|---|---|
+| 20 | 24 |
+| 25 | 29 |
+| 30 | 34 |
+| 35 | 39 |
+| 40 | 44 |
+| 45 | 54 |
+| 55 | 65 |
+
+ถ้า user บอกอายุนอก bracket เช่น "28-45" ให้ปรับเป็น ageMin=25, ageMax=44 แล้วแจ้ง user ก่อน
+
 ## Campaign Objectives ที่รองรับ
 
 | พิมพ์ว่า | Objective |
