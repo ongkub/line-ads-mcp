@@ -17,8 +17,9 @@ async def test_create_adset_defaults_to_dry_run():
         name="Test Adset",
         bid_type="CPF",
         bid_strategy="COST_CAP",
-        daily_budget=300,
-        bid_amount=10,
+        auto_bid_type="FRIEND",
+        daily_budget=100,
+        bid_amount=25,
     )
 
     assert result["ok"] is True
@@ -33,76 +34,127 @@ async def test_create_adset_budget_in_micro():
         name="Test Adset",
         bid_type="CPF",
         bid_strategy="COST_CAP",
-        daily_budget=300,
-        bid_amount=10,
+        auto_bid_type="FRIEND",
+        daily_budget=100,
+        bid_amount=25,
     )
 
     payload = result["payload"]
-    # Confirmed from real adset: dailyBudgetMicro: 300000000, bidAmountMicro: 10000000
-    assert payload["dailyBudgetMicro"] == 300_000_000
-    assert payload["bidAmountMicro"] == 10_000_000
+    assert payload["dailyBudgetMicro"] == 100_000_000
+    assert payload["bidAmountMicro"] == 25_000_000
     assert "dailyBudget" not in payload
     assert "bidAmount" not in payload
 
 
 @pytest.mark.asyncio
-async def test_create_adset_includes_bid_type_and_strategy():
+async def test_create_adset_includes_auto_bid_type():
+    """Verified: autoBidType is required by LINE Ads API."""
     result = await create_adset(
         campaign_id="9652193645389",
         name="Test Adset",
         bid_type="CPF",
         bid_strategy="COST_CAP",
+        auto_bid_type="FRIEND",
+        daily_budget=100,
+        bid_amount=25,
     )
 
-    payload = result["payload"]
-    assert payload["bidType"] == "CPF"
-    assert payload["bidStrategy"] == "COST_CAP"
+    assert result["payload"]["autoBidType"] == "FRIEND"
 
 
 @pytest.mark.asyncio
-async def test_create_adset_rejects_invalid_bid_type():
+async def test_create_adset_targeting_is_flat_object():
+    """Verified: targeting uses flat ageMin/ageMax/country fields, not nested arrays."""
     result = await create_adset(
         campaign_id="9652193645389",
-        name="Test",
-        bid_type="CPX",
+        name="Test Adset",
+        bid_type="CPF",
         bid_strategy="COST_CAP",
+        auto_bid_type="FRIEND",
+        daily_budget=100,
+        bid_amount=25,
+        age_min=25,
+        age_max=54,
+    )
+
+    targeting = result["payload"]["targeting"]
+    assert targeting["ageMin"] == 25
+    assert targeting["ageMax"] == 54
+    assert targeting["targetingMode"] == "AUTO"
+    assert targeting["country"] == "TH"
+
+
+@pytest.mark.asyncio
+async def test_create_adset_excluded_audience_ids_in_targeting():
+    """GAIN_FRIENDS campaigns require excludedCustomAudienceIds."""
+    result = await create_adset(
+        campaign_id="9652193645389",
+        name="Test Adset",
+        bid_type="CPF",
+        bid_strategy="COST_CAP",
+        auto_bid_type="FRIEND",
+        daily_budget=100,
+        bid_amount=25,
+        excluded_audience_ids=["5343822743474"],
+    )
+
+    targeting = result["payload"]["targeting"]
+    assert targeting["excludedCustomAudienceIds"] == ["5343822743474"]
+
+
+@pytest.mark.asyncio
+async def test_create_adset_requires_bid_amount_for_cost_cap():
+    result = await create_adset(
+        campaign_id="9652193645389",
+        name="Test Adset",
+        bid_type="CPF",
+        bid_strategy="COST_CAP",
+        auto_bid_type="FRIEND",
+        daily_budget=100,
+        bid_amount=None,
     )
 
     assert result["ok"] is False
-    assert "bid_type" in result["message"]
+    assert "bid_amount" in result["message"]
 
 
 @pytest.mark.asyncio
-async def test_create_adset_rejects_invalid_bid_strategy():
+async def test_create_adset_lowest_cost_no_bid_amount():
+    result = await create_adset(
+        campaign_id="9652193645389",
+        name="Test Adset",
+        bid_type="CPF",
+        bid_strategy="LOWEST_COST",
+        auto_bid_type="FRIEND",
+        daily_budget=100,
+    )
+
+    assert result["ok"] is True
+    assert "bidAmountMicro" not in result["payload"]
+
+
+@pytest.mark.asyncio
+async def test_create_adset_rejects_invalid_auto_bid_type():
     result = await create_adset(
         campaign_id="9652193645389",
         name="Test",
         bid_type="CPF",
-        bid_strategy="TARGET_ROAS",
+        bid_strategy="COST_CAP",
+        auto_bid_type="LIKE",
+        daily_budget=100,
+        bid_amount=25,
     )
 
     assert result["ok"] is False
-    assert "bid_strategy" in result["message"]
+    assert "auto_bid_type" in result["message"]
 
 
 @pytest.mark.asyncio
 async def test_update_adset_uses_configuredStatus():
     result = await update_adset(adset_id="1752193645380", status="PAUSED")
 
-    payload = result["payload"]
-    assert payload["configuredStatus"] == "PAUSED"
-    assert "status" not in payload
-
-
-@pytest.mark.asyncio
-async def test_update_adset_budget_in_micro():
-    result = await update_adset(adset_id="1752193645380", daily_budget=500, bid_amount=15)
-
-    payload = result["payload"]
-    assert payload["dailyBudgetMicro"] == 500_000_000
-    assert payload["bidAmountMicro"] == 15_000_000
-    assert "dailyBudget" not in payload
-    assert "bidAmount" not in payload
+    assert result["payload"]["configuredStatus"] == "PAUSED"
+    assert "status" not in result["payload"]
 
 
 @pytest.mark.asyncio

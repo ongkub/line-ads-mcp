@@ -9,9 +9,15 @@ from line_ads_mcp.client import LineAdsClient, LineAdsConfig, resolve_ad_account
 from .common import clean_dict, dry_run_response, handle_tool_error, ok, require_one_of, to_micro
 
 STATUSES = {"ACTIVE", "PAUSED"}
-# Confirmed from real adset data: bidType: CPF, bidStrategy: COST_CAP
 BID_TYPES = {"CPF", "CPM", "CPC", "CPV"}
 BID_STRATEGIES = {"COST_CAP", "LOWEST_COST"}
+
+# autoBidType verified from real API:
+#   CPF + GAIN_FRIENDS → FRIEND (required, or API returns error)
+AUTO_BID_TYPES = {"FRIEND", "CLICK", "INSTALL", "VIDEO_VIEW", "REACH"}
+
+# Valid LINE Ads age bracket values for TH (verified by probing)
+VALID_AGES = {15, 18, 20, 25, 30, 35, 40, 45, 50, 54, 55, 60, 65}
 
 
 async def list_adsets(campaign_id: str, ad_account_id: str | None = None) -> dict[str, Any]:
@@ -30,32 +36,56 @@ async def create_adset(
     name: str,
     bid_type: str,
     bid_strategy: str,
+    auto_bid_type: str,
+    daily_budget: float,
     ad_account_id: str | None = None,
-    daily_budget: float | None = None,
     bid_amount: float | None = None,
-    targeting: dict[str, Any] | None = None,
+    age_min: int = 20,
+    age_max: int = 65,
+    country: str = "TH",
+    excluded_audience_ids: list[str] | None = None,
     start_date: str | None = None,
     end_date: str | None = None,
     dry_run: bool = True,
 ) -> dict[str, Any]:
+    """Create an adset with verified payload structure.
+
+    Verified from real API:
+    - autoBidType is required (FRIEND for CPF/GAIN_FRIENDS campaigns)
+    - targeting is always required (flat object with targetingMode, ageMin, ageMax, country)
+    - GAIN_FRIENDS campaigns require excludedCustomAudienceIds (existing LINE OA friends audience)
+    - bid_amount required only when bid_strategy=COST_CAP
+    """
     try:
         require_one_of(bid_type, BID_TYPES, "bid_type")
         require_one_of(bid_strategy, BID_STRATEGIES, "bid_strategy")
+        require_one_of(auto_bid_type, AUTO_BID_TYPES, "auto_bid_type")
+        if bid_strategy == "COST_CAP" and bid_amount is None:
+            from line_ads_mcp.client import LineAdsAPIError
+            raise LineAdsAPIError(400, "bid_strategy=COST_CAP ต้องระบุ bid_amount ด้วย", "VALIDATION_ERROR")
         config = LineAdsConfig.from_env()
         account_id = resolve_ad_account_id(ad_account_id, config)
-        payload = clean_dict(
-            {
-                "campaignId": campaign_id,
-                "name": name,
-                "bidType": bid_type,
-                "bidStrategy": bid_strategy,
-                "dailyBudgetMicro": to_micro(daily_budget) if daily_budget is not None else None,
-                "bidAmountMicro": to_micro(bid_amount) if bid_amount is not None else None,
-                "targeting": targeting,
-                "startDate": start_date,
-                "endDate": end_date,
-            }
-        )
+
+        targeting = clean_dict({
+            "targetingMode": "AUTO",
+            "ageMin": age_min,
+            "ageMax": age_max,
+            "country": country,
+            "excludedCustomAudienceIds": excluded_audience_ids or None,
+        })
+
+        payload = clean_dict({
+            "campaignId": campaign_id,
+            "name": name,
+            "bidType": bid_type,
+            "bidStrategy": bid_strategy,
+            "autoBidType": auto_bid_type,
+            "dailyBudgetMicro": to_micro(daily_budget),
+            "bidAmountMicro": to_micro(bid_amount) if bid_amount is not None else None,
+            "targeting": targeting,
+            "startDate": start_date,
+            "endDate": end_date,
+        })
         endpoint = f"/adaccounts/{account_id}/adgroups"
         if dry_run:
             return dry_run_response("create_adset", endpoint, payload)
@@ -72,7 +102,6 @@ async def update_adset(
     status: str | None = None,
     daily_budget: float | None = None,
     bid_amount: float | None = None,
-    targeting: dict[str, Any] | None = None,
     dry_run: bool = True,
 ) -> dict[str, Any]:
     try:
@@ -80,14 +109,11 @@ async def update_adset(
             require_one_of(status, STATUSES, "status")
         config = LineAdsConfig.from_env()
         account_id = resolve_ad_account_id(ad_account_id, config)
-        payload = clean_dict(
-            {
-                "configuredStatus": status,
-                "dailyBudgetMicro": to_micro(daily_budget) if daily_budget is not None else None,
-                "bidAmountMicro": to_micro(bid_amount) if bid_amount is not None else None,
-                "targeting": targeting,
-            }
-        )
+        payload = clean_dict({
+            "configuredStatus": status,
+            "dailyBudgetMicro": to_micro(daily_budget) if daily_budget is not None else None,
+            "bidAmountMicro": to_micro(bid_amount) if bid_amount is not None else None,
+        })
         endpoint = f"/adaccounts/{account_id}/adgroups/{adset_id}"
         if dry_run:
             return dry_run_response("update_adset", endpoint, payload)
