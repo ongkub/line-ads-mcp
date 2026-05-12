@@ -94,7 +94,7 @@ async def update_campaign(
         if dry_run:
             return dry_run_response("update_campaign", endpoint, payload)
         async with LineAdsClient(config) as client:
-            data = await client.put(endpoint, payload)
+            data = await client.post(endpoint, payload)
         return ok(data)
     except Exception as error:
         return handle_tool_error(error)

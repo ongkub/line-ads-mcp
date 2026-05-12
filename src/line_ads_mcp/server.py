@@ -21,6 +21,7 @@ from line_ads_mcp.tools.campaigns import (
     resume_campaign,
     update_campaign,
 )
+from line_ads_mcp.tools.codes import list_advanced_targeting_codes
 from line_ads_mcp.tools.reports import get_daily_report, get_report, get_weekly_report
 
 ToolFn = Callable[..., Awaitable[dict[str, Any]]]
@@ -121,7 +122,11 @@ TOOLS: dict[str, tuple[str, dict[str, Any], ToolFn]] = {
                 "age_min": {"type": "integer", "default": 20, "description": "อายุต่ำสุด (ค่าที่ valid: 20, 25, 30, 35, 40, 45, 50, 54, 65)"},
                 "age_max": {"type": "integer", "default": 65, "description": "อายุสูงสุด"},
                 "country": {"type": "string", "default": "TH"},
+                "targeting_mode": {"type": "string", "enum": ["AUTO", "MANUAL"], "description": "ถ้ามี interest_codes ให้ใช้ MANUAL; tool จะเลือกให้เองถ้าไม่ระบุ"},
+                "genders": {"type": "array", "items": {"type": "string"}},
+                "interest_codes": {"type": "array", "items": {"type": "string"}, "description": "ใช้ code จาก list_advanced_targeting_codes เช่น อาชีพและธุรกิจ=4 สำหรับ TH/GAIN_FRIENDS"},
                 "excluded_audience_ids": {"type": "array", "items": {"type": "string"}, "description": "GAIN_FRIENDS campaigns ต้องใส่ audience ID ของเพื่อนปัจจุบัน (ดูจาก list_audiences)"},
+                "custom_audience_ids": {"type": "array", "items": {"type": "string"}},
                 "start_date": {"type": "string"},
                 "end_date": {"type": "string"},
                 "dry_run": {"type": "boolean", "default": True},
@@ -140,6 +145,14 @@ TOOLS: dict[str, tuple[str, dict[str, Any], ToolFn]] = {
                 "daily_budget": {"type": "number", "description": "งบประมาณต่อวัน หน่วย THB"},
                 "bid_amount": {"type": "number", "description": "ราคา bid สูงสุด หน่วย THB"},
                 "targeting": {"type": "object"},
+                "age_min": {"type": "integer"},
+                "age_max": {"type": "integer"},
+                "country": {"type": "string", "default": "TH"},
+                "targeting_mode": {"type": "string", "enum": ["AUTO", "MANUAL"]},
+                "genders": {"type": "array", "items": {"type": "string"}},
+                "interest_codes": {"type": "array", "items": {"type": "string"}},
+                "excluded_audience_ids": {"type": "array", "items": {"type": "string"}},
+                "custom_audience_ids": {"type": "array", "items": {"type": "string"}},
                 "dry_run": {"type": "boolean", "default": True},
             },
             ["adset_id"],
@@ -224,6 +237,17 @@ TOOLS: dict[str, tuple[str, dict[str, Any], ToolFn]] = {
         schema({"ad_account_id": {"type": "string"}}),
         list_audiences,
     ),
+    "list_advanced_targeting_codes": (
+        "ดึง official advanced targeting codes สำหรับ interest/behavior/status ก่อนสร้าง manual targeting",
+        schema(
+            {
+                "campaign_objective": {"type": "string", "default": "GAIN_FRIENDS"},
+                "country": {"type": "string", "default": "TH"},
+                "locale": {"type": "string", "default": "th"},
+            }
+        ),
+        list_advanced_targeting_codes,
+    ),
     "create_audience": (
         "สร้าง custom audience ใหม่ แบบ dry_run เป็นค่าเริ่มต้น",
         schema(
@@ -274,4 +298,3 @@ def cli() -> None:
 
 if __name__ == "__main__":
     cli()
-

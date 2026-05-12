@@ -161,7 +161,8 @@ class LineAdsClient:
 
     def _signed_path_for(self, path: str) -> str:
         base_path = urlsplit(self.config.base_url).path.rstrip("/")
-        return f"{base_path}{self._normalize_endpoint(path)}"
+        normalized = self._normalize_endpoint(path)
+        return f"{base_path}{normalized}"
 
     @staticmethod
     def _normalize_endpoint(path: str) -> str:

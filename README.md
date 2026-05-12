@@ -184,6 +184,7 @@ line-ads-mcp
 | `get_ad_status` | ✅ |
 | `get_report` / `get_daily_report` / `get_weekly_report` | ✅ |
 | `list_audiences` | ✅ |
+| `list_advanced_targeting_codes` | ✅ ใช้หา official interest/behavior/status codes |
 
 ### ✅ Write-ready (payload ตรง spec + tests ผ่าน — ยังคง dry_run=true โดย default)
 
@@ -192,7 +193,7 @@ line-ads-mcp
 | `create_campaign` | `dailyBudgetMicro` / `totalBudgetMicro` (THB × 1M) | `campaignObjective: GAIN_FRIENDS` | payload verified จาก real API data |
 | `update_campaign` | `dailyBudgetMicro` | `configuredStatus` | |
 | `pause_campaign` / `resume_campaign` | — | `configuredStatus: PAUSED/ACTIVE` | |
-| `create_adset` | `dailyBudgetMicro` / `bidAmountMicro` (THB × 1M) | `bidType`, `bidStrategy` required | ต้องระบุ bid_type + bid_strategy |
+| `create_adset` | `dailyBudgetMicro` / `bidAmountMicro` (THB × 1M) | `bidType`, `bidStrategy` required | ถ้ามี `interest_codes` จะใช้ `targetingMode=MANUAL` + `includeAdvancedTargetings` |
 | `update_adset` | `dailyBudgetMicro` / `bidAmountMicro` | `configuredStatus` | |
 | `pause_adset` / `resume_adset` | — | `configuredStatus: PAUSED/ACTIVE` | |
 
@@ -222,6 +223,35 @@ LINE Ads API v3 ใช้หน่วย **micro** สำหรับเงิ�
 ```
 
 Tool รับค่า THB ปกติ (float) แล้วแปลง micro ให้อัตโนมัติผ่าน `to_micro()` ใน `common.py`
+
+## Interest Targeting
+
+LINE Ads API ไม่รับชื่อ interest ตรง ๆ เช่น `Marketing`, `Branding`, `Advertising`, `Business` ต้องใช้ official code จาก `list_advanced_targeting_codes`
+
+สำหรับ `TH + GAIN_FRIENDS` ที่ทดสอบจริง:
+
+```
+อาชีพและธุรกิจ = code "4"
+```
+
+การใส่ interest ต้องเป็น payload ลักษณะนี้:
+
+```json
+{
+  "targeting": {
+    "targetingMode": "MANUAL",
+    "ageMin": 25,
+    "ageMax": 44,
+    "country": "TH",
+    "excludedCustomAudienceIds": ["5343822743474"],
+    "includeAdvancedTargetings": [
+      { "interests": ["4"] }
+    ]
+  }
+}
+```
+
+ถ้า `targetingMode=AUTO` interest/custom advanced targeting จะไม่ถูกใช้
 
 ## Valid Campaign Objectives
 

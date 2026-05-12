@@ -85,6 +85,28 @@ async def test_create_adset_targeting_is_flat_object():
 
 
 @pytest.mark.asyncio
+async def test_create_adset_interest_codes_use_manual_advanced_targeting():
+    result = await create_adset(
+        campaign_id="9652193645389",
+        name="Interest Adset",
+        bid_type="CPF",
+        bid_strategy="COST_CAP",
+        auto_bid_type="FRIEND",
+        daily_budget=100,
+        bid_amount=25,
+        age_min=25,
+        age_max=44,
+        interest_codes=["4"],
+        excluded_audience_ids=["5343822743474"],
+    )
+
+    targeting = result["payload"]["targeting"]
+    assert targeting["targetingMode"] == "MANUAL"
+    assert targeting["includeAdvancedTargetings"] == [{"interests": ["4"]}]
+    assert targeting["excludedCustomAudienceIds"] == ["5343822743474"]
+
+
+@pytest.mark.asyncio
 async def test_create_adset_excluded_audience_ids_in_targeting():
     """GAIN_FRIENDS campaigns require excludedCustomAudienceIds."""
     result = await create_adset(
@@ -100,6 +122,21 @@ async def test_create_adset_excluded_audience_ids_in_targeting():
 
     targeting = result["payload"]["targeting"]
     assert targeting["excludedCustomAudienceIds"] == ["5343822743474"]
+
+
+@pytest.mark.asyncio
+async def test_update_adset_can_dry_run_interest_targeting_change():
+    result = await update_adset(
+        adset_id="5563793668113",
+        age_min=25,
+        age_max=44,
+        interest_codes=["4"],
+        excluded_audience_ids=["5343822743474"],
+    )
+
+    targeting = result["payload"]["targeting"]
+    assert targeting["targetingMode"] == "MANUAL"
+    assert targeting["includeAdvancedTargetings"] == [{"interests": ["4"]}]
 
 
 @pytest.mark.asyncio

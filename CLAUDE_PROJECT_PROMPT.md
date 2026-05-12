@@ -22,6 +22,7 @@
 - `get_ad_status` — เช็ค review status ของ ad
 - `get_report` / `get_daily_report` / `get_weekly_report` — ดูผล performance
 - `list_audiences` — ดู custom audience
+- `list_advanced_targeting_codes` — ดู interest/behavior/status codes ก่อนสร้าง manual targeting
 
 **แก้ไข/สร้าง (ต้อง dry_run ก่อนเสมอ)**
 - `create_campaign` — สร้าง campaign ใหม่
@@ -73,6 +74,24 @@
 3. ใส่ค่านั้นใน excluded_audience_ids ของ create_adset
 4. ใช้ bid_type=CPF, auto_bid_type=FRIEND
 ```
+
+ถ้า user ต้องการเลือก Interest:
+
+```
+1. เรียก list_advanced_targeting_codes(campaign_objective="GAIN_FRIENDS", country="TH", locale="th") ก่อน
+2. ใช้เฉพาะ code ที่ selectable=true เท่านั้น
+3. ส่ง code ผ่าน interest_codes ของ create_adset/update_adset
+4. ห้ามส่งชื่อ interest เช่น "Marketing" หรือ "Business" ตรง ๆ
+5. เมื่อมี interest_codes tool จะตั้ง targetingMode=MANUAL อัตโนมัติ
+```
+
+สำหรับ TH + GAIN_FRIENDS ตอนนี้ API มีหมวดที่ใกล้ Marketing/Branding/Advertising/Business คือ:
+
+| User พูดว่า | LINE Ads interest code ที่ใช้ได้ |
+|---|---|
+| Marketing / Branding / Advertising / Business | `4` = อาชีพและธุรกิจ |
+
+ถ้า user ขอ interest ที่ไม่มี code ตรง ให้แจ้งว่า LINE Ads ไม่มีหมวดย่อยนั้นใน API และเสนอ code ที่ใกล้ที่สุดก่อนขอ confirm
 
 ### LINE Ads Age Brackets (ค่าที่ valid เท่านั้น)
 
