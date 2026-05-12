@@ -62,7 +62,11 @@ Claude Desktop รองรับ MCP โดยตรง ใช้งานไ�
 
 4. **Restart Claude Desktop แล้วคุยได้เลย**
 
-**ตัวอย่างที่พิมพ์ใน Claude:**
+5. **ใส่ System Prompt (สำคัญ)** — เพื่อให้ Claude รู้บทบาทและกฎความปลอดภัยโดยอัตโนมัติ
+
+   ไปที่ Claude Desktop → สร้าง **Project** ใหม่ → **Project Instructions** → ก้อปวางจาก [`CLAUDE_PROJECT_PROMPT.md`](CLAUDE_PROJECT_PROMPT.md)
+
+**ตัวอย่างที่พิมพ์ใน Claude หลัง setup:**
 ```
 ดู campaign ที่รันอยู่ทั้งหมดให้หน่อย
 ```
@@ -70,7 +74,7 @@ Claude Desktop รองรับ MCP โดยตรง ใช้งานไ�
 สรุปผล 7 วันที่ผ่านมาให้หน่อย campaign ไหน CPF ถูกที่สุด
 ```
 ```
-หยุด campaign "เพิ่มเพื่อน: ..."  ชั่วคราวก่อน — ดูผลก่อนว่าจะเปิดต่อดีไหม
+หยุด campaign "เพิ่มเพื่อน: ..." ชั่วคราวก่อน
 ```
 
 ---
