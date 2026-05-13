@@ -13,11 +13,28 @@ async def test_create_campaign_defaults_to_dry_run(monkeypatch):
         name="เพิ่มเพื่อน Test",
         objective="GAIN_FRIENDS",
         daily_budget=300,
+        start_date="2026-05-14T09:00:00+07:00",
     )
 
     assert result["ok"] is True
     assert result["dry_run"] is True
     assert result["endpoint"] == "/adaccounts/A123/campaigns"
+
+
+@pytest.mark.asyncio
+async def test_create_campaign_requires_start_date(monkeypatch):
+    monkeypatch.setenv("LINE_ADS_ACCESS_KEY", "access")
+    monkeypatch.setenv("LINE_ADS_SECRET_KEY", "secret")
+    monkeypatch.setenv("LINE_ADS_AD_ACCOUNT_ID", "A123")
+
+    result = await create_campaign(
+        name="เพิ่มเพื่อน Test",
+        objective="GAIN_FRIENDS",
+        daily_budget=300,
+    )
+
+    assert result["ok"] is False
+    assert "start_date" in result["message"]
 
 
 @pytest.mark.asyncio
@@ -31,6 +48,7 @@ async def test_create_campaign_payload_uses_micro_units(monkeypatch):
         objective="GAIN_FRIENDS",
         daily_budget=300,
         total_budget=9000,
+        start_date="2026-05-14T09:00:00+07:00",
     )
 
     payload = result["payload"]
@@ -48,7 +66,7 @@ async def test_create_campaign_payload_uses_campaignObjective(monkeypatch):
     monkeypatch.setenv("LINE_ADS_SECRET_KEY", "secret")
     monkeypatch.setenv("LINE_ADS_AD_ACCOUNT_ID", "A123")
 
-    result = await create_campaign(name="Test", objective="GAIN_FRIENDS")
+    result = await create_campaign(name="Test", objective="GAIN_FRIENDS", start_date="2026-05-14T09:00:00+07:00")
 
     payload = result["payload"]
     assert payload["campaignObjective"] == "GAIN_FRIENDS"
@@ -61,7 +79,7 @@ async def test_create_campaign_rejects_old_objective_values(monkeypatch):
     monkeypatch.setenv("LINE_ADS_SECRET_KEY", "secret")
 
     for bad_objective in ("FRIEND_ADDED", "VISIT_MY_WEBSITE", "APP_INSTALLS", "VIDEO_VIEWS"):
-        result = await create_campaign(name="Bad", objective=bad_objective)
+        result = await create_campaign(name="Bad", objective=bad_objective, start_date="2026-05-14T09:00:00+07:00")
         assert result["ok"] is False, f"Should reject {bad_objective}"
         assert "objective" in result["message"]
 
@@ -73,7 +91,7 @@ async def test_create_campaign_accepts_all_valid_objectives(monkeypatch):
     monkeypatch.setenv("LINE_ADS_AD_ACCOUNT_ID", "A123")
 
     for obj in ("GAIN_FRIENDS", "WEBSITE_TRAFFIC", "CONVERSIONS", "REACH", "APP_INSTALL", "VIDEO_VIEW"):
-        result = await create_campaign(name="Test", objective=obj)
+        result = await create_campaign(name="Test", objective=obj, start_date="2026-05-14T09:00:00+07:00")
         assert result["ok"] is True, f"Should accept {obj}"
         assert result["payload"]["campaignObjective"] == obj
 

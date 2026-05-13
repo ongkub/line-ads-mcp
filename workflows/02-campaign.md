@@ -81,6 +81,7 @@ Hard stop:
 | Objective | เพิ่มเพื่อน / เข้าเว็บ / Reach / Conversion / App install / Video | ใช่ |
 | Budget | งบประมาณต่อวันกี่บาทครับ? | ใช่ |
 | Bid/cost cap | CPF/CPC/CPA/bid cap อยากตั้งไว้กี่บาทครับ? | ถ้าใช้ cost cap |
+| Start date | วันเวลาเริ่มโฆษณาเมื่อไหร่? เช่น `2026-05-14T09:00:00+07:00` | ใช่ |
 | Targeting | อายุ เพศ พื้นที่ interest/custom audience | ใช่ |
 | Creative | มีรูป/วิดีโอและข้อความไหม? | ก่อนสร้าง ad |
 | Landing/OA | URL หรือ LINE OA objective | ตาม objective |
@@ -120,6 +121,7 @@ Reach → CPM/auto ต้องมาจาก user
 - Campaign: [name]
 - Budget: ฿[X]/วัน
 - Bid/cost cap: ฿[Y] [CPF/CPC/CPA/CPM]
+- Start date: [YYYY-MM-DDTHH:mm:ss+07:00]
 - Adset plan: [จำนวน + targeting]
 - Creative plan: [จำนวน ads + format]
 
@@ -150,6 +152,7 @@ Tool: `create_campaign`
 Rules:
 - ใช้ objective enum จาก API เท่านั้น เช่น `GAIN_FRIENDS`
 - เงินใช้ THB ใน tool แล้ว tool แปลงเป็น micro
+- `start_date` เป็น required จาก LINE Ads API ต้องถาม user ตั้งแต่ intake
 - dry-run ก่อนเสมอ
 
 Flow:

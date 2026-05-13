@@ -29,10 +29,11 @@ def _build_targeting(
     targeting_mode: str | None = None,
     genders: list[str] | None = None,
     interest_codes: list[str] | None = None,
+    behavior_codes: list[str] | None = None,
     excluded_audience_ids: list[str] | None = None,
     custom_audience_ids: list[str] | None = None,
 ) -> dict[str, Any]:
-    has_manual_targeting = bool(genders or interest_codes or custom_audience_ids)
+    has_manual_targeting = bool(genders or interest_codes or behavior_codes or custom_audience_ids)
     mode = targeting_mode or ("MANUAL" if has_manual_targeting else "AUTO")
     require_one_of(mode, TARGETING_MODES, "targeting_mode")
 
@@ -45,8 +46,16 @@ def _build_targeting(
         "customAudienceIds": custom_audience_ids or None,
         "excludedCustomAudienceIds": excluded_audience_ids or None,
     })
+    
+    advanced_targeting = {}
     if interest_codes:
-        targeting["includeAdvancedTargetings"] = [{"interests": interest_codes}]
+        advanced_targeting["interests"] = interest_codes
+    if behavior_codes:
+        advanced_targeting["behaviors"] = behavior_codes
+        
+    if advanced_targeting:
+        targeting["includeAdvancedTargetings"] = [advanced_targeting]
+        
     return targeting
 
 
@@ -76,6 +85,7 @@ async def create_adset(
     targeting_mode: str | None = None,
     genders: list[str] | None = None,
     interest_codes: list[str] | None = None,
+    behavior_codes: list[str] | None = None,
     excluded_audience_ids: list[str] | None = None,
     custom_audience_ids: list[str] | None = None,
     start_date: str | None = None,
@@ -87,7 +97,7 @@ async def create_adset(
     Verified from real API:
     - autoBidType is required (FRIEND for CPF/GAIN_FRIENDS campaigns)
     - targeting is always required (flat object with targetingMode, ageMin, ageMax, country)
-    - interest targeting must use targetingMode=MANUAL and includeAdvancedTargetings
+    - interest/behavior targeting must use targetingMode=MANUAL and includeAdvancedTargetings
     - GAIN_FRIENDS campaigns require excludedCustomAudienceIds (existing LINE OA friends audience)
     - bid_amount required only when bid_strategy=COST_CAP
     """
@@ -108,6 +118,7 @@ async def create_adset(
             targeting_mode=targeting_mode,
             genders=genders,
             interest_codes=interest_codes,
+            behavior_codes=behavior_codes,
             excluded_audience_ids=excluded_audience_ids,
             custom_audience_ids=custom_audience_ids,
         )

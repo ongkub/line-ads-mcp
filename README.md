@@ -190,7 +190,7 @@ line-ads-mcp
 
 | Tool | Budget/Bid | Objective/Status | หมายเหตุ |
 |---|---|---|---|
-| `create_campaign` | `dailyBudgetMicro` / `totalBudgetMicro` (THB × 1M) | `campaignObjective: GAIN_FRIENDS` | payload verified จาก real API data |
+| `create_campaign` | `dailyBudgetMicro` / `totalBudgetMicro` (THB × 1M) | `campaignObjective: GAIN_FRIENDS` | ต้องระบุ `start_date` เสมอ เช่น `2026-05-14T09:00:00+07:00` |
 | `update_campaign` | `dailyBudgetMicro` | `configuredStatus` | |
 | `pause_campaign` / `resume_campaign` | — | `configuredStatus: PAUSED/ACTIVE` | |
 | `create_adset` | `dailyBudgetMicro` / `bidAmountMicro` (THB × 1M) | `bidType`, `bidStrategy` required | ถ้ามี `interest_codes` จะใช้ `targetingMode=MANUAL` + `includeAdvancedTargetings` |

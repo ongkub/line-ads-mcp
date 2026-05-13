@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from line_ads_mcp.client import LineAdsClient, LineAdsConfig, resolve_ad_account_id
+from line_ads_mcp.client import LineAdsAPIError, LineAdsClient, LineAdsConfig, resolve_ad_account_id
 
 from .common import clean_dict, dry_run_response, handle_tool_error, ok, require_one_of, to_micro
 
@@ -48,6 +48,12 @@ async def create_campaign(
 ) -> dict[str, Any]:
     try:
         require_one_of(objective, OBJECTIVES, "objective")
+        if not start_date:
+            raise LineAdsAPIError(
+                400,
+                "start_date เป็นข้อมูลจำเป็น กรุณาถาม user และระบุวันเวลาเริ่มโฆษณาก่อนสร้าง campaign",
+                "VALIDATION_ERROR",
+            )
         config = LineAdsConfig.from_env()
         account_id = resolve_ad_account_id(ad_account_id, config)
         payload = clean_dict(
