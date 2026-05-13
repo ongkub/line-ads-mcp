@@ -107,6 +107,69 @@ async def test_create_adset_interest_codes_use_manual_advanced_targeting():
 
 
 @pytest.mark.asyncio
+async def test_create_adset_interest_groups_for_narrow_targeting():
+    result = await create_adset(
+        campaign_id="9652193645389",
+        name="Narrow Adset",
+        bid_type="CPF",
+        bid_strategy="COST_CAP",
+        auto_bid_type="FRIEND",
+        daily_budget=111,
+        bid_amount=25,
+        age_min=30,
+        age_max=54,
+        interest_groups=[["4"], ["12"]],
+        excluded_audience_ids=["5343822743474"],
+    )
+
+    targeting = result["payload"]["targeting"]
+    assert targeting["targetingMode"] == "MANUAL"
+    assert targeting["includeAdvancedTargetings"] == [
+        {"interests": ["4"]},
+        {"interests": ["12"]},
+    ]
+
+
+@pytest.mark.asyncio
+async def test_update_adset_interest_groups_for_narrow_targeting():
+    result = await update_adset(
+        adset_id="9135593673707",
+        age_min=30,
+        age_max=54,
+        interest_groups=[["4"], ["12"]],
+        excluded_audience_ids=["5343822743474"],
+    )
+
+    targeting = result["payload"]["targeting"]
+    assert targeting["includeAdvancedTargetings"] == [
+        {"interests": ["4"]},
+        {"interests": ["12"]},
+    ]
+
+
+@pytest.mark.asyncio
+async def test_create_adset_can_combine_narrow_interests_and_behaviors():
+    result = await create_adset(
+        campaign_id="9652193645389",
+        name="Narrow With Behavior",
+        bid_type="CPF",
+        bid_strategy="COST_CAP",
+        auto_bid_type="FRIEND",
+        daily_budget=111,
+        bid_amount=25,
+        interest_groups=[["4"], ["12"]],
+        behavior_codes=["1590"],
+    )
+
+    targeting = result["payload"]["targeting"]
+    assert targeting["includeAdvancedTargetings"] == [
+        {"interests": ["4"]},
+        {"interests": ["12"]},
+        {"behaviors": ["1590"]},
+    ]
+
+
+@pytest.mark.asyncio
 async def test_create_adset_excluded_audience_ids_in_targeting():
     """GAIN_FRIENDS campaigns require excludedCustomAudienceIds."""
     result = await create_adset(

@@ -134,6 +134,37 @@ async def test_create_ad_accepts_add_friend_cta():
     assert result["payload"]["creative"]["callToAction"]["type"] == "ADD_FRIEND"
 
 
+@pytest.mark.asyncio
+async def test_create_ad_rejects_title_over_20_chars():
+    result = await create_ad(
+        adset_id="1752193645380",
+        name="Test Ad",
+        image_hash=IMAGE_HASH,
+        title="ขายออนไลน์ โตด้วยแผนที่ชัด",
+        call_to_action="ADD_FRIEND",
+    )
+
+    assert result["ok"] is False
+    assert "title" in result["message"]
+    assert "20" in result["message"]
+
+
+@pytest.mark.asyncio
+async def test_create_ad_rejects_description_over_20_chars():
+    result = await create_ad(
+        adset_id="1752193645380",
+        name="Test Ad",
+        image_hash=IMAGE_HASH,
+        title="Title",
+        description="ให้ทีม Agency ช่วยวางแผนยิงแอด",
+        call_to_action="ADD_FRIEND",
+    )
+
+    assert result["ok"] is False
+    assert "description" in result["message"]
+    assert "20" in result["message"]
+
+
 # ---------------------------------------------------------------------------
 # upload_media
 # ---------------------------------------------------------------------------

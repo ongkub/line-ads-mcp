@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from line_ads_mcp.client import LineAdsClient, LineAdsConfig, resolve_ad_account_id
+from line_ads_mcp.client import LineAdsAPIError, LineAdsClient, LineAdsConfig, resolve_ad_account_id
 
 from .common import clean_dict, dry_run_response, handle_tool_error, ok, require_one_of, to_micro
 
@@ -21,6 +21,36 @@ AUTO_BID_TYPES = {"FRIEND", "CLICK", "INSTALL", "VIDEO_VIEW", "REACH"}
 VALID_AGES = {15, 18, 20, 25, 30, 35, 40, 45, 50, 54, 55, 60, 65}
 
 
+def _build_advanced_targeting_groups(
+    *,
+    interest_codes: list[str] | None = None,
+    interest_groups: list[list[str]] | None = None,
+    behavior_codes: list[str] | None = None,
+) -> list[dict[str, list[str]]]:
+    """Build LINE includeAdvancedTargetings groups.
+
+    LINE treats each object in includeAdvancedTargetings as a separate condition.
+    Use interest_groups for narrow/intersection-like targeting, for example
+    [["4"], ["12"]] -> [{"interests": ["4"]}, {"interests": ["12"]}].
+    """
+    groups: list[dict[str, list[str]]] = []
+
+    for group in interest_groups or []:
+        cleaned_group = [code for code in group if code]
+        if cleaned_group:
+            groups.append({"interests": cleaned_group})
+
+    broad_group: dict[str, list[str]] = {}
+    if interest_codes:
+        broad_group["interests"] = interest_codes
+    if behavior_codes:
+        broad_group["behaviors"] = behavior_codes
+    if broad_group:
+        groups.append(broad_group)
+
+    return groups
+
+
 def _build_targeting(
     *,
     age_min: int,
@@ -29,11 +59,12 @@ def _build_targeting(
     targeting_mode: str | None = None,
     genders: list[str] | None = None,
     interest_codes: list[str] | None = None,
+    interest_groups: list[list[str]] | None = None,
     behavior_codes: list[str] | None = None,
     excluded_audience_ids: list[str] | None = None,
     custom_audience_ids: list[str] | None = None,
 ) -> dict[str, Any]:
-    has_manual_targeting = bool(genders or interest_codes or behavior_codes or custom_audience_ids)
+    has_manual_targeting = bool(genders or interest_codes or interest_groups or behavior_codes or custom_audience_ids)
     mode = targeting_mode or ("MANUAL" if has_manual_targeting else "AUTO")
     require_one_of(mode, TARGETING_MODES, "targeting_mode")
 
@@ -46,16 +77,15 @@ def _build_targeting(
         "customAudienceIds": custom_audience_ids or None,
         "excludedCustomAudienceIds": excluded_audience_ids or None,
     })
-    
-    advanced_targeting = {}
-    if interest_codes:
-        advanced_targeting["interests"] = interest_codes
-    if behavior_codes:
-        advanced_targeting["behaviors"] = behavior_codes
-        
-    if advanced_targeting:
-        targeting["includeAdvancedTargetings"] = [advanced_targeting]
-        
+
+    advanced_targeting_groups = _build_advanced_targeting_groups(
+        interest_codes=interest_codes,
+        interest_groups=interest_groups,
+        behavior_codes=behavior_codes,
+    )
+    if advanced_targeting_groups:
+        targeting["includeAdvancedTargetings"] = advanced_targeting_groups
+
     return targeting
 
 
@@ -85,6 +115,7 @@ async def create_adset(
     targeting_mode: str | None = None,
     genders: list[str] | None = None,
     interest_codes: list[str] | None = None,
+    interest_groups: list[list[str]] | None = None,
     behavior_codes: list[str] | None = None,
     excluded_audience_ids: list[str] | None = None,
     custom_audience_ids: list[str] | None = None,
@@ -98,6 +129,7 @@ async def create_adset(
     - autoBidType is required (FRIEND for CPF/GAIN_FRIENDS campaigns)
     - targeting is always required (flat object with targetingMode, ageMin, ageMax, country)
     - interest/behavior targeting must use targetingMode=MANUAL and includeAdvancedTargetings
+    - use interest_groups for narrow targeting groups, e.g. [["4"], ["12"]]
     - GAIN_FRIENDS campaigns require excludedCustomAudienceIds (existing LINE OA friends audience)
     - bid_amount required only when bid_strategy=COST_CAP
     """
@@ -106,7 +138,6 @@ async def create_adset(
         require_one_of(bid_strategy, BID_STRATEGIES, "bid_strategy")
         require_one_of(auto_bid_type, AUTO_BID_TYPES, "auto_bid_type")
         if bid_strategy == "COST_CAP" and bid_amount is None:
-            from line_ads_mcp.client import LineAdsAPIError
             raise LineAdsAPIError(400, "bid_strategy=COST_CAP ต้องระบุ bid_amount ด้วย", "VALIDATION_ERROR")
         config = LineAdsConfig.from_env()
         account_id = resolve_ad_account_id(ad_account_id, config)
@@ -118,6 +149,7 @@ async def create_adset(
             targeting_mode=targeting_mode,
             genders=genders,
             interest_codes=interest_codes,
+            interest_groups=interest_groups,
             behavior_codes=behavior_codes,
             excluded_audience_ids=excluded_audience_ids,
             custom_audience_ids=custom_audience_ids,
@@ -158,6 +190,8 @@ async def update_adset(
     targeting_mode: str | None = None,
     genders: list[str] | None = None,
     interest_codes: list[str] | None = None,
+    interest_groups: list[list[str]] | None = None,
+    behavior_codes: list[str] | None = None,
     excluded_audience_ids: list[str] | None = None,
     custom_audience_ids: list[str] | None = None,
     dry_run: bool = True,
@@ -169,7 +203,17 @@ async def update_adset(
         account_id = resolve_ad_account_id(ad_account_id, config)
         if targeting is None and any(
             value is not None
-            for value in (age_min, age_max, targeting_mode, genders, interest_codes, excluded_audience_ids, custom_audience_ids)
+            for value in (
+                age_min,
+                age_max,
+                targeting_mode,
+                genders,
+                interest_codes,
+                interest_groups,
+                behavior_codes,
+                excluded_audience_ids,
+                custom_audience_ids,
+            )
         ):
             targeting = _build_targeting(
                 age_min=age_min if age_min is not None else 20,
@@ -178,6 +222,8 @@ async def update_adset(
                 targeting_mode=targeting_mode,
                 genders=genders,
                 interest_codes=interest_codes,
+                interest_groups=interest_groups,
+                behavior_codes=behavior_codes,
                 excluded_audience_ids=excluded_audience_ids,
                 custom_audience_ids=custom_audience_ids,
             )

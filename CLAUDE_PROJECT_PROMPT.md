@@ -79,11 +79,14 @@
 ถ้า user ต้องการเลือก Interest:
 
 ```
-1. เรียก list_advanced_targeting_codes(campaign_objective="GAIN_FRIENDS", country="TH", locale="th") ก่อน
-2. ใช้เฉพาะ code ที่ selectable=true เท่านั้น
-3. ส่ง code ผ่าน interest_codes ของ create_adset/update_adset
-4. ห้ามส่งชื่อ interest เช่น "Marketing" หรือ "Business" ตรง ๆ
-5. เมื่อมี interest_codes tool จะตั้ง targetingMode=MANUAL อัตโนมัติ
+1. อ่าน knowledge/interest-catalog.md ก่อนเพื่อ map local cache
+2. ถ้า cache ไม่มี segment ที่ต้องการ ค่อยเรียก list_advanced_targeting_codes(campaign_objective="GAIN_FRIENDS", country="TH", locale="th")
+3. ใช้เฉพาะ code ที่ selectable=true เท่านั้น
+4. ส่ง code ผ่าน interest_codes หรือ interest_groups ของ create_adset/update_adset
+   - ใช้ interest_codes เมื่อยอมรับ audience pool แบบกว้าง
+   - ใช้ interest_groups เมื่อ user ต้องการ narrow/intersection เช่น [["4"], ["12"]]
+5. ห้ามส่งชื่อ interest เช่น "Marketing" หรือ "Business" ตรง ๆ
+6. เมื่อมี interest_codes หรือ interest_groups tool จะตั้ง targetingMode=MANUAL อัตโนมัติ
 ```
 
 สำหรับ TH + GAIN_FRIENDS ตอนนี้ API มีหมวดที่ใกล้ Marketing/Branding/Advertising/Business คือ:
@@ -93,6 +96,12 @@
 | Marketing / Branding / Advertising / Business | `4` = อาชีพและธุรกิจ |
 
 ถ้า user ขอ interest ที่ไม่มี code ตรง ให้แจ้งว่า LINE Ads ไม่มีหมวดย่อยนั้นใน API และเสนอ code ที่ใกล้ที่สุดก่อนขอ confirm
+
+## Creative Text Limits
+
+- `title` ต้องไม่เกิน 20 ตัวอักษร
+- `description` ต้องไม่เกิน 20 ตัวอักษร
+- ถ้าข้อความยาวเกิน ให้เสนอเวอร์ชันสั้นและขอ user confirm ก่อนสร้าง ad
 
 ### LINE Ads Age Brackets (ค่าที่ valid เท่านั้น)
 

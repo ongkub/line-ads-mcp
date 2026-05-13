@@ -185,10 +185,12 @@ Tool: `create_adset`
 ห้ามส่งชื่อ interest ตรง ๆ เช่น `Marketing`, `Branding`, `Business`
 
 ```
-1. list_advanced_targeting_codes(campaign_objective="GAIN_FRIENDS", country="TH", locale="th")
-2. เลือกเฉพาะ code ที่ selectable=true
-3. ส่งผ่าน `interest_codes`
-4. เมื่อมี `interest_codes` tool ต้องใช้:
+1. อ่าน knowledge/interest-catalog.md ก่อน
+2. ถ้า local cache ไม่มี segment ที่ต้องการ ค่อยเรียก list_advanced_targeting_codes(campaign_objective="GAIN_FRIENDS", country="TH", locale="th")
+3. เลือกเฉพาะ code ที่ selectable=true
+4. ส่งผ่าน `interest_codes` สำหรับ audience pool แบบกว้าง
+5. ส่งผ่าน `interest_groups` สำหรับ narrow/intersection เช่น [["4"], ["12"]]
+6. เมื่อมี `interest_codes` หรือ `interest_groups` tool ต้องใช้:
    targetingMode="MANUAL"
    includeAdvancedTargetings=[{"interests": ["..."]}]
 ```
@@ -254,6 +256,11 @@ upload_media(file_path, dry_run=False)
 ### Step B4 — Create Ad
 
 Tool: `create_ad`
+
+Text limits:
+- `title` ไม่เกิน 20 ตัวอักษร
+- `description` ไม่เกิน 20 ตัวอักษร
+- ต้อง validate ก่อน dry-run/create จริง เพื่อไม่ให้ API reject กลางทาง
 
 สำหรับ `GAIN_FRIENDS`:
 

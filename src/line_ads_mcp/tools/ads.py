@@ -16,6 +16,16 @@ CREATIVE_FORMATS = {"IMAGE", "VIDEO"}
 MEDIA_TYPES = {"IMAGE", "VIDEO"}
 IMAGE_MIME_TYPES = {"image/jpeg", "image/png"}
 VIDEO_MIME_TYPES = {"video/mp4", "video/quicktime"}
+AD_TEXT_MAX_LENGTH = 20
+
+
+def _validate_ad_text(value: str | None, field_name: str) -> None:
+    if value is not None and len(value) > AD_TEXT_MAX_LENGTH:
+        raise LineAdsAPIError(
+            400,
+            f"{field_name} ต้องไม่เกิน {AD_TEXT_MAX_LENGTH} ตัวอักษร",
+            "VALIDATION_ERROR",
+        )
 
 
 def _validate_media(file_path: str) -> tuple[Path, str, str]:
@@ -98,6 +108,8 @@ async def create_ad(
     try:
         require_one_of(call_to_action, CALL_TO_ACTIONS, "call_to_action")
         require_one_of(creative_format, CREATIVE_FORMATS, "creative_format")
+        _validate_ad_text(title, "title")
+        _validate_ad_text(description, "description")
         if destination_url and not destination_url.startswith("https://"):
             raise LineAdsAPIError(400, "destination_url ต้องขึ้นต้นด้วย https://", "VALIDATION_ERROR")
         config = LineAdsConfig.from_env()

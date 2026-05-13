@@ -201,7 +201,7 @@ line-ads-mcp
 
 | Tool | หมายเหตุ |
 |---|---|
-| `create_ad` | creative เป็น nested object; ใช้ `imageHash` (จาก upload_media), `title`, `callToAction.type` |
+| `create_ad` | creative เป็น nested object; ใช้ `imageHash` (จาก upload_media), `title`, `callToAction.type`; `title`/`description` ไม่เกิน 20 ตัวอักษร |
 | `upload_media` | endpoint `/media/upload`; ต้องส่ง `mediaType: IMAGE\|VIDEO`; signing ใช้ `"multipart/form-data"` |
 
 ### ⚠️ Dry-run only (403 permissions — โค้ดถูก แต่ account ยังไม่ได้เปิด feature)
@@ -226,7 +226,9 @@ Tool รับค่า THB ปกติ (float) แล้วแปลง micro 
 
 ## Interest Targeting
 
-LINE Ads API ไม่รับชื่อ interest ตรง ๆ เช่น `Marketing`, `Branding`, `Advertising`, `Business` ต้องใช้ official code จาก `list_advanced_targeting_codes`
+LINE Ads API ไม่รับชื่อ interest ตรง ๆ เช่น `Marketing`, `Branding`, `Advertising`, `Business` ต้องใช้ official code เท่านั้น
+
+ให้ใช้ [knowledge/interest-catalog.md](knowledge/interest-catalog.md) เป็น local cache ก่อน เพื่อประหยัด API calls แล้วค่อยเรียก `list_advanced_targeting_codes` เฉพาะเมื่อไม่มี segment ใน cache, objective/country/locale เปลี่ยน, API reject code, หรือต้องการ audience size ล่าสุด
 
 สำหรับ `TH + GAIN_FRIENDS` ที่ทดสอบจริง:
 
@@ -234,7 +236,7 @@ LINE Ads API ไม่รับชื่อ interest ตรง ๆ เช่น 
 อาชีพและธุรกิจ = code "4"
 ```
 
-การใส่ interest ต้องเป็น payload ลักษณะนี้:
+การใส่ interest แบบกว้างใช้ `interest_codes`:
 
 ```json
 {
@@ -249,6 +251,15 @@ LINE Ads API ไม่รับชื่อ interest ตรง ๆ เช่น 
     ]
   }
 }
+```
+
+ถ้าต้องการ narrow audience ให้ใช้ `interest_groups` เช่น `[[ "4" ], [ "12" ]]` เพื่อสร้างหลาย object ใน `includeAdvancedTargetings`:
+
+```json
+"includeAdvancedTargetings": [
+  { "interests": ["4"] },
+  { "interests": ["12"] }
+]
 ```
 
 ถ้า `targetingMode=AUTO` interest/custom advanced targeting จะไม่ถูกใช้
