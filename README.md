@@ -78,6 +78,97 @@ Claude Desktop รองรับ MCP โดยตรง ใช้งานไ�
 
 ---
 
+### วิธีใช้กับ Gemini CLI
+
+Gemini CLI รองรับ MCP server ผ่านไฟล์ `settings.json` หรือคำสั่ง `gemini mcp add`
+
+**ขั้นตอนพื้นฐาน:**
+
+1. **ติดตั้ง repo และ dependencies**
+   ```bash
+   git clone https://github.com/ongkub/line-ads-mcp.git
+   cd line-ads-mcp
+   python -m venv .venv
+   source .venv/bin/activate
+   pip install -e ".[dev]"
+   cp .env.example .env
+   ```
+
+2. **ใส่ค่า credentials ใน `.env`**
+   ```bash
+   LINE_ADS_ACCESS_KEY=your_access_key
+   LINE_ADS_SECRET_KEY=your_secret_key
+   LINE_ADS_BASE_URL=https://ads.line.me/api/v3
+   LINE_ADS_AD_ACCOUNT_ID=A_xxxxxxxxxxxx
+   ```
+
+3. **เพิ่ม MCP server ให้ Gemini CLI**
+
+   แบบใช้คำสั่ง:
+   ```bash
+   gemini mcp add line-ads \
+     -e LINE_ADS_ACCESS_KEY=your_access_key \
+     -e LINE_ADS_SECRET_KEY=your_secret_key \
+     -e LINE_ADS_BASE_URL=https://ads.line.me/api/v3 \
+     -e LINE_ADS_AD_ACCOUNT_ID=A_xxxxxxxxxxxx \
+     /absolute/path/to/line-ads-mcp/.venv/bin/python \
+     -m line_ads_mcp.server
+   ```
+
+   หลังใช้คำสั่งนี้ ให้ตรวจ `settings.json` ว่า `cwd` ชี้ไปที่ repo นี้ถูกต้อง ถ้าไม่มีให้เพิ่มเองตามตัวอย่าง JSON ด้านล่าง
+
+   หรือแก้ไฟล์ `~/.gemini/settings.json` / `.gemini/settings.json` เอง:
+   ```json
+   {
+     "mcpServers": {
+       "line-ads": {
+         "command": "/absolute/path/to/line-ads-mcp/.venv/bin/python",
+         "args": ["-m", "line_ads_mcp.server"],
+         "cwd": "/absolute/path/to/line-ads-mcp",
+         "env": {
+           "LINE_ADS_ACCESS_KEY": "your_access_key",
+           "LINE_ADS_SECRET_KEY": "your_secret_key",
+           "LINE_ADS_BASE_URL": "https://ads.line.me/api/v3",
+           "LINE_ADS_AD_ACCOUNT_ID": "A_xxxxxxxxxxxx"
+         },
+         "timeout": 600000,
+         "trust": false
+       }
+     }
+   }
+   ```
+
+4. **ตรวจว่า Gemini เห็น MCP tools**
+   ```bash
+   gemini
+   /mcp
+   ```
+
+   ควรเห็น server ชื่อ `line-ads` และ tools เช่น `list_campaigns`, `get_report`, `create_campaign`
+
+5. **ใส่ instruction ให้ Gemini อ่านก่อนใช้งาน**
+
+   ตอนเริ่ม session ให้ paste:
+   ```text
+   อ่าน CLAUDE_PROJECT_PROMPT.md, AGENTS.md, และ workflow/knowledge ที่เกี่ยวข้องก่อนเรียก LINE Ads MCP tools
+   ทุก write action ต้อง dry_run=True ก่อนเสมอ และต้องรอคำว่า "ยืนยัน" ก่อน dry_run=False
+   ห้าม assume ค่าเงิน เช่น budget, bid cap, CPF, CPC, CPA
+   ```
+
+**ตัวอย่าง prompt ใน Gemini CLI:**
+```text
+ใช้ LINE Ads MCP ดึง campaign active ทั้งหมด แล้วสรุป performance 7 วันล่าสุด
+```
+
+```text
+ฉันต้องการสร้าง campaign เพิ่มเพื่อน LINE OA แบบ MCP Manual/API-first
+อ่าน workflow/02-campaign.md ก่อน แล้วถามข้อมูลที่ขาดทีละข้อ
+```
+
+อ้างอิง: [Gemini CLI MCP server docs](https://google-gemini.github.io/gemini-cli/docs/tools/mcp-server.html)
+
+---
+
 ### วิธีใช้กับ OpenAI Codex (สำหรับทีม technical / system operator)
 
 [Codex](https://codex.com) เป็น AI coding agent ของ OpenAI ที่รันโค้ด Python ได้โดยตรง
@@ -132,6 +223,61 @@ LINE_ADS_SECRET_KEY=your_secret_key
 LINE_ADS_BASE_URL=https://ads.line.me/api/v3
 LINE_ADS_AD_ACCOUNT_ID=A_xxxxxxxxxxxx
 ```
+
+## Update From Git
+
+ใช้เมื่อมีการอัปเดตเวอร์ชันใหม่บน GitHub แล้วต้องการดึงลงเครื่อง
+
+### กรณีไม่มีแก้ไฟล์เองในเครื่อง
+
+```bash
+cd /path/to/line-ads-mcp
+git status
+git pull --rebase origin main
+source .venv/bin/activate
+pip install -e ".[dev]"
+python -m pytest
+```
+
+ถ้าใช้ path เครื่องนี้:
+
+```bash
+cd "/Users/ongkub/Desktop/lineads-ai/LINE Ads V0.1.3 - MCP Layer"
+git pull --rebase origin main
+source .venv/bin/activate
+pip install -e ".[dev]"
+python -m pytest
+```
+
+### กรณีมีไฟล์แก้ค้างในเครื่อง
+
+เช็กก่อน:
+
+```bash
+git status
+```
+
+ถ้ามีไฟล์ที่แก้เองและยังไม่อยาก commit:
+
+```bash
+git stash push -m "local work before update"
+git pull --rebase origin main
+git stash pop
+python -m pytest
+```
+
+ถ้ามี conflict หลัง `git stash pop` ให้แก้ไฟล์ที่ conflict แล้วรัน:
+
+```bash
+git status
+python -m pytest
+```
+
+### ไฟล์ที่ไม่ควรถูกทับ
+
+- `.env` ไม่ควร commit และไม่ควรถูกทับจาก Git
+- credentials เช่น Access Key / Secret Key ให้เก็บใน `.env` หรือ config ของ AI client เท่านั้น
+- ถ้ามี `.env.example` เปลี่ยน ให้เทียบแล้วค่อยเพิ่ม key ใหม่ลง `.env` เอง
 
 ## Run
 
