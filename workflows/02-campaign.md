@@ -34,6 +34,24 @@ PATH C — Browser Manual Fallback
 
 ---
 
+## Knowledge Loading Gate
+
+ก่อนเริ่ม MODE 2 ต้องอ่าน:
+- `knowledge/bidding-strategy.md` — ใช้ประกอบการอธิบาย bid strategy แต่ห้ามเลือกเลขเงินแทน user
+- `workflows/02-campaign.md` — ใช้ยืนยัน path, safety rules, dry-run flow
+
+โหลดเพิ่มตามจังหวะ:
+- ก่อนเลือก audience/interest/behavior: อ่าน `knowledge/interest-catalog.md`
+- ก่อน upload media หรือสร้าง ad creative: อ่าน `knowledge/ad-specs.md`
+- ก่อนประเมิน performance ระหว่างสร้าง/แก้: อ่าน `knowledge/kpi-benchmarks.md`
+
+Rule สำคัญ:
+- ห้ามเรียก `list_advanced_targeting_codes` ก่อนอ่าน `knowledge/interest-catalog.md` เว้นแต่ cache ไม่มี segment, objective/country/locale เปลี่ยน, API reject code, หรือต้องการ audience size ล่าสุด
+- ห้าม upload media ก่อนอ่าน `knowledge/ad-specs.md`
+- ถ้าใช้ LINE AI Agent (PATH A) ต้องจำว่าเป็น browser/UI-only และไม่ใช่ default
+
+---
+
 ## Money Safety Rules
 
 ```
@@ -241,6 +259,9 @@ Tool: `upload_media`
 Rules:
 - รองรับ JPG/PNG/MP4/MOV
 - รูปแนะนำ `1080x1080` หรือ `1200x628`
+- Small image แนะนำ `600x400`
+- ขนาดไฟล์: รูป ≤ 10MB, วิดีโอ ≤ 1GB
+- Video: MP4/MOV, ความยาว ≤ 600 วินาที (แนะนำ 15–30 วินาที)
 - ถ้า API ตอบ `INVALID_IMAGE_SIZE` ให้ user แก้ไฟล์ก่อน
 - upload media เป็น write action ต้อง confirm ก่อน `dry_run=False`
 

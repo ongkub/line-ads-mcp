@@ -25,6 +25,18 @@ PHASE 5   → MCP Handoff (.env + read-only smoke test)
 
 ---
 
+## Knowledge Loading Gate
+
+ก่อนเริ่ม MODE 1 ต้องอ่าน:
+- `knowledge/line-ads-guidelines.md` — ใช้เช็คประเภทธุรกิจต้องห้าม/ต้องใช้เอกสาร/คำกล่าวอ้างที่เสี่ยง
+
+ระหว่าง workflow:
+- ถ้าเป็นกลุ่ม B ต้องกลับไปดู guideline อีกครั้งก่อนสรุปเอกสาร
+- ก่อน submit account ต้องทวนข้อมูลที่เปลี่ยนไม่ได้: หมวดหมู่ธุรกิจ, ประเทศ, timezone, currency
+- หลัง setup สำเร็จ ให้ไป MCP handoff แล้วใช้ workflow อื่นต่อ ห้ามใช้ browser ต่อในงานที่ MCP ทำได้
+
+---
+
 ## PHASE 1 — BUSINESS TYPE CHECK
 
 ถามก่อนเสมอ:

@@ -61,6 +61,24 @@ Hard stop:
 
 ---
 
+## Knowledge Loading Gate
+
+ก่อนเริ่ม MODE 4 ต้องอ่าน:
+- `knowledge/kpi-benchmarks.md` — ใช้ diagnose metric เช่น CTR, CPC, CPM, budget pacing
+- `knowledge/bidding-strategy.md` — ใช้แนะนำ bid strategy/learning phase โดยไม่เดาเลขเงิน
+- `workflows/04-optimize.md` — ใช้ยืนยัน dry-run/confirm/snapshot rules
+
+โหลดเพิ่มตามจังหวะ:
+- ถ้าจะปรับ targeting/interest: อ่าน `knowledge/interest-catalog.md` ก่อน แล้วค่อยเรียก code lookup เฉพาะจำเป็น
+- ถ้าจะเปลี่ยน creative/upload media: อ่าน `knowledge/ad-specs.md` ก่อน
+
+Rule สำคัญ:
+- ต้อง snapshot before ด้วย MCP read tools ก่อน recommend action
+- ทุก write action ต้อง dry-run แล้วรอ user ยืนยัน
+- ห้ามคำนวณตัวเลขใหม่แทน user แม้จะเป็น +20%; ให้ถาม user ระบุตัวเลขเอง
+
+---
+
 ## Phase 1 — Intake
 
 ถาม:

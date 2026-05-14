@@ -5,27 +5,47 @@
 ---
 
 ## Image Ad
-- Format: JPG, PNG, GIF (static)
+- Format: JPG, PNG
 - Aspect ratio: 1.91:1 (1200×628px) หรือ 1:1 (1080×1080px)
-- ขนาดไฟล์: ≤ 30MB
+- ขนาดไฟล์: ≤ 10MB ต่อภาพ
 - ข้อความในรูป: ≤ 20% ของพื้นที่ภาพ
+
+## Small Image Ad
+- Format: JPG, PNG
+- ขนาดไฟล์: ≤ 10MB ต่อภาพ
+- Recommended image size: 600×400px
 
 ## Video Ad
 - Format: MP4, MOV
-- ขนาดไฟล์: ≤ 500MB
-- ความยาว: 5–60 วินาที (แนะนำ 15–30 วิ)
-- Aspect ratio: 16:9, 1:1, หรือ 9:16
-- Resolution: ≥ 720p
+- ขนาดไฟล์: ≤ 1GB ต่อวิดีโอ
+- ความยาว: ≤ 600 วินาที (แนะนำ 15–30 วินาทีสำหรับ performance)
+- Aspect ratio / resolution:
+  - 1:1 — 600–1280 × 600–1280px
+  - 16:9 — 240–1920 × 135–1080px
+  - 9:16 — 135–1080 × 240–1920px
+
+## Small Video Ad
+- Format: MP4, MOV
+- ขนาดไฟล์: ≤ 1GB ต่อวิดีโอ
+- ความยาว: ≤ 600 วินาที
+- Aspect ratio / resolution:
+  - 1:1 — 600–1280 × 600–1280px
+  - 16:9 — 240–1920 × 135–1080px
 
 ## Carousel Ad
 - จำนวนภาพ: 2–10 ภาพ
 - แต่ละภาพ: 1:1 (1080×1080px)
 - Format: JPG, PNG
-- ขนาดต่อภาพ: ≤ 30MB
+- ขนาดต่อภาพ: ≤ 10MB
+- Maximum: 10 cards
 
-## Small Image Ad (CPF)
-- Aspect ratio: 1:1 (300×300px ขึ้นไป)
-- Format: JPG, PNG
+## Animation Ad
+- Format: PNG (APNG)
+- ขนาดไฟล์: ≤ 300KB ต่อ animated image
+- Image size: 600×400px
+- ความยาว: 1–4 วินาที
+- Frames: 5–20
+- Loops: 1–4
 
 ---
 
@@ -33,7 +53,7 @@
 
 | Error | สาเหตุ | แก้ไข |
 |---|---|---|
-| File too large | ไฟล์เกิน 30MB | Compress ภาพหรือลด resolution |
+| File too large | รูปเกิน 10MB หรือวิดีโอเกิน 1GB | Compress ไฟล์หรือลด resolution |
 | Wrong aspect ratio | สัดส่วนไม่ตรง | Crop ให้ได้ 1.91:1 หรือ 1:1 |
 | Too much text | ข้อความเกิน 20% | ลดข้อความในรูป |
-| Unsupported format | ไฟล์ไม่ใช่ JPG/PNG/MP4 | Convert ไฟล์ก่อน |
+| Unsupported format | ไฟล์ไม่ใช่ JPG/PNG/MP4/MOV | Convert ไฟล์ก่อน |

@@ -134,6 +134,47 @@ Cache นี้รวม advanced targeting หลายชนิด ไม่�
 - `behaviors` ใช้กับ `behavior_codes`
 - `purchaseIntents` ยังถูก cache ไว้เพื่ออ้างอิง แต่ tool ปัจจุบันยังไม่ได้ expose เป็น dedicated parameter
 
+### Workbook taxonomy summary
+
+ข้อมูลจาก `LINE Ads x Claude - knowledge_workflow.xlsx` ระบุ scope ของ advanced targeting สำหรับบริบทนี้:
+- Interests: 18 หมวดหลัก
+- Behaviors: 201 รายการ
+- Purchase intents: 12 รายการ
+
+Official interest families:
+- เกม (Games)
+- แกดเจ็ตและเครื่องใช้ไฟฟ้า (Digital gadgets and appliances)
+- กีฬา (Sports)
+- อาชีพและธุรกิจ (Careers and business)
+- แฟชั่น (Fashion)
+- บ้านและสวน (Home and garden)
+- ทีวีและภาพยนตร์ (TV and movies)
+- ดนตรี (Music)
+- การศึกษา การเรียนรู้ (Education and training)
+- การเงิน (Finance)
+- สุขภาพและการออกกำลัง (Health and fitness)
+- รถยนต์ (Automotive)
+- หนังสือและการ์ตูน (Books and comics)
+- อาหารเครื่องดื่ม (Food and drink)
+- บิวตี้ (Beauty)
+- ท่องเที่ยว (Travel)
+- บันเทิง (Entertainment)
+- ช้อปปิ้ง (Shopping)
+
+Behavior signal families:
+1. ผู้ติดตามบัญชีทางการ LINE (LINE Official Account Follower)
+2. หัวข้อ LINE OpenChat (LINE OpenChat Topic)
+3. ผู้ใช้งานบริการของ LINE (LINE Service Users)
+4. ประเภทข่าว LINE TODAY (LINE TODAY Category)
+5. พฤติกรรมการซื้อสินค้า (Purchase Behaviors)
+6. พฤติกรรมการใช้งานแอปบนมือถือ (Mobile App Behavior)
+
+Mobile app / device behavior groups ที่ควรใช้ช่วยคิด audience:
+- ระดับความมั่งคั่ง: low, mid, high, ultra high affluence
+- Lifestyle signals: travel enthusiasts, beauty/fashion for women, beauty/fashion for men, mom & kids, retirees, environmentally-conscious consumers, first-time car buyers
+- ผู้ใช้อุปกรณ์มือถือ: price tier และ device age
+- หมวดหมู่แอป: games, graphics design, books/comics, communication, education/training, entertainment, lifestyle, music, news/magazines, office productivity, personalization, photo/video editing, social, tools/utilities, travel
+
 ### Business use-case mapping
 
 | Target segment | Recommended narrow groups | Notes |

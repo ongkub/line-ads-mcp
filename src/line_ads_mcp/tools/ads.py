@@ -17,6 +17,8 @@ MEDIA_TYPES = {"IMAGE", "VIDEO"}
 IMAGE_MIME_TYPES = {"image/jpeg", "image/png"}
 VIDEO_MIME_TYPES = {"video/mp4", "video/quicktime"}
 AD_TEXT_MAX_LENGTH = 20
+IMAGE_MAX_SIZE_BYTES = 10 * 1024 * 1024
+VIDEO_MAX_SIZE_BYTES = 1024 * 1024 * 1024
 
 
 def _validate_ad_text(value: str | None, field_name: str) -> None:
@@ -38,12 +40,12 @@ def _validate_media(file_path: str) -> tuple[Path, str, str]:
     mime_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
     size = path.stat().st_size
     if mime_type in IMAGE_MIME_TYPES:
-        if size > 30 * 1024 * 1024:
-            raise LineAdsAPIError(400, "ไฟล์รูปต้องมีขนาดไม่เกิน 30MB", "VALIDATION_ERROR")
+        if size > IMAGE_MAX_SIZE_BYTES:
+            raise LineAdsAPIError(400, "ไฟล์รูปต้องมีขนาดไม่เกิน 10MB", "VALIDATION_ERROR")
         media_type = "IMAGE"
     elif mime_type in VIDEO_MIME_TYPES:
-        if size > 500 * 1024 * 1024:
-            raise LineAdsAPIError(400, "ไฟล์วิดีโอต้องมีขนาดไม่เกิน 500MB", "VALIDATION_ERROR")
+        if size > VIDEO_MAX_SIZE_BYTES:
+            raise LineAdsAPIError(400, "ไฟล์วิดีโอต้องมีขนาดไม่เกิน 1GB", "VALIDATION_ERROR")
         media_type = "VIDEO"
     else:
         raise LineAdsAPIError(400, "รองรับเฉพาะ JPG, PNG, MP4, MOV", "VALIDATION_ERROR")

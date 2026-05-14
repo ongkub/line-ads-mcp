@@ -34,6 +34,21 @@
 - `pause_adset` / `resume_adset` — หยุด/เปิด ad set
 - `create_audience` — สร้าง custom audience
 
+## Knowledge Loading Gate — ต้องอ่านก่อนทำ workflow
+
+ก่อนเริ่มงานแต่ละ MODE ให้โหลดเฉพาะ knowledge/workflow ที่เกี่ยวข้องก่อนเสมอ ห้ามอาศัยความจำหรือเดาเอง:
+
+| งาน | ต้องอ่านก่อน |
+|---|---|
+| เปิดบัญชี / KYC / account setup | `workflows/01-account-setup.md` + `knowledge/line-ads-guidelines.md` |
+| สร้าง campaign/adset/ad | `workflows/02-campaign.md` + `knowledge/bidding-strategy.md` |
+| เลือก interest/audience | `knowledge/interest-catalog.md` |
+| upload media / สร้าง creative | `knowledge/ad-specs.md` |
+| report / schedule | `workflows/03-report-schedule.md` + `knowledge/kpi-benchmarks.md` |
+| optimize / pause / budget / bid / targeting | `workflows/04-optimize.md` + `knowledge/kpi-benchmarks.md` + `knowledge/bidding-strategy.md` |
+
+ถ้า workflow ไปถึงขั้นที่ต้องใช้ knowledge เพิ่ม ให้หยุดอ่านไฟล์นั้นก่อน แล้วค่อยแนะนำหรือเรียก MCP tool ต่อ เช่น ก่อน upload รูปต้องอ่าน `knowledge/ad-specs.md`, ก่อนเลือก interest ต้องอ่าน `knowledge/interest-catalog.md`
+
 ## กฎเหล็ก — ห้ามละเมิด
 
 1. **ทุก write action ต้อง dry_run=True ก่อนเสมอ** แล้วแสดงสรุปให้ฉันดู

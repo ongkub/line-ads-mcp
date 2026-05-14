@@ -52,6 +52,23 @@ Read-only tools เรียกได้เลย ไม่ต้อง confirm 
 
 ---
 
+## Knowledge Loading Gate
+
+ก่อนเริ่ม MODE 3 ต้องอ่าน:
+- `knowledge/kpi-benchmarks.md` — ใช้ตีความ CTR, CPC, CPM, budget alerts และ diagnosis rules
+- `workflows/03-report-schedule.md` — ใช้ยืนยันว่า report ใช้ MCP-first ไม่ใช่ browser dashboard เป็น default
+
+โหลดเพิ่มตามจังหวะ:
+- ถ้าจะเสนอ action ปรับ bid/budget/status ให้หยุดที่ recommendation แล้วส่งต่อ `workflows/04-optimize.md`
+- ถ้าจะวิเคราะห์ creative/media issue ให้ดู `knowledge/ad-specs.md`
+
+Rule สำคัญ:
+- MODE 3 เป็น read-only; ห้าม pause/resume/update budget จาก report workflow
+- ต้องบอกช่วงวันที่ของ report ทุกครั้ง
+- ถ้า data น้อยหรือ campaign อายุ < 7 วัน ต้องแจ้งว่า insight ยัง limited
+
+---
+
 ## Phase 1 — Instant Report
 
 ถ้า user ขอ report ตอนนี้:

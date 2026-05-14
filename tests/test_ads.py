@@ -218,3 +218,27 @@ async def test_upload_video_dry_run_media_type(tmp_path):
 
     assert result["ok"] is True
     assert result["payload"]["media_type"] == "VIDEO"
+
+
+@pytest.mark.asyncio
+async def test_upload_media_rejects_image_over_10mb(tmp_path):
+    img = tmp_path / "large.png"
+    with img.open("wb") as fh:
+        fh.truncate(10 * 1024 * 1024 + 1)
+
+    result = await upload_media(str(img), dry_run=True)
+
+    assert result["ok"] is False
+    assert "10MB" in result["message"]
+
+
+@pytest.mark.asyncio
+async def test_upload_media_accepts_video_over_old_500mb_limit(tmp_path):
+    vid = tmp_path / "large.mp4"
+    with vid.open("wb") as fh:
+        fh.truncate(500 * 1024 * 1024 + 1)
+
+    result = await upload_media(str(vid), dry_run=True)
+
+    assert result["ok"] is True
+    assert result["payload"]["media_type"] == "VIDEO"
