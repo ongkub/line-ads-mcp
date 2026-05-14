@@ -41,12 +41,12 @@ PATH C — Browser Manual Fallback
 - `workflows/02-campaign.md` — ใช้ยืนยัน path, safety rules, dry-run flow
 
 โหลดเพิ่มตามจังหวะ:
-- ก่อนเลือก audience/interest/behavior: อ่าน `knowledge/interest-catalog.md`
+- ก่อนเลือก audience/interest/behavior: อ่าน `knowledge/interest-catalog-INDEX.md`
 - ก่อน upload media หรือสร้าง ad creative: อ่าน `knowledge/ad-specs.md`
 - ก่อนประเมิน performance ระหว่างสร้าง/แก้: อ่าน `knowledge/kpi-benchmarks.md`
 
 Rule สำคัญ:
-- ห้ามเรียก `list_advanced_targeting_codes` ก่อนอ่าน `knowledge/interest-catalog.md` เว้นแต่ cache ไม่มี segment, objective/country/locale เปลี่ยน, API reject code, หรือต้องการ audience size ล่าสุด
+- ห้ามเรียก `list_advanced_targeting_codes` ก่อนอ่าน `knowledge/interest-catalog-INDEX.md` และ detail file ที่เกี่ยวข้อง เว้นแต่ cache ไม่มี segment, objective/country/locale เปลี่ยน, API reject code, หรือต้องการ audience size ล่าสุด
 - ห้าม upload media ก่อนอ่าน `knowledge/ad-specs.md`
 - ถ้าใช้ LINE AI Agent (PATH A) ต้องจำว่าเป็น browser/UI-only และไม่ใช่ default
 
@@ -160,7 +160,7 @@ Reach → CPM/auto ต้องมาจาก user
 1. list_campaigns
 2. ถ้ามี campaign คล้ายกัน ให้แจ้ง user ก่อนสร้างซ้ำ
 3. ถ้า objective = GAIN_FRIENDS ให้ list_audiences เพื่อหา active_friends_audience_id
-4. ถ้ามี interest ให้ list_advanced_targeting_codes ก่อน map code
+4. ถ้ามี interest ให้ map จาก `knowledge/interest-catalog-INDEX.md` ก่อน แล้วค่อยโหลด detail file หรือเรียก `list_advanced_targeting_codes` เฉพาะเมื่อ cache ไม่พอ
 ```
 
 ### Step B1 — Create Campaign
@@ -203,12 +203,17 @@ Tool: `create_adset`
 ห้ามส่งชื่อ interest ตรง ๆ เช่น `Marketing`, `Branding`, `Business`
 
 ```
-1. อ่าน knowledge/interest-catalog.md ก่อน
-2. ถ้า local cache ไม่มี segment ที่ต้องการ ค่อยเรียก list_advanced_targeting_codes(campaign_objective="GAIN_FRIENDS", country="TH", locale="th")
-3. เลือกเฉพาะ code ที่ selectable=true
-4. ส่งผ่าน `interest_codes` สำหรับ audience pool แบบกว้าง
-5. ส่งผ่าน `interest_groups` สำหรับ narrow/intersection เช่น [["4"], ["12"]]
-6. เมื่อมี `interest_codes` หรือ `interest_groups` tool ต้องใช้:
+1. อ่าน `knowledge/interest-catalog-INDEX.md` ก่อนเสมอ เพื่อเห็นหมวดหลัก + common mapping โดยไม่โหลด catalog เต็ม
+2. ถ้า INDEX ไม่มี niche/sub-code ที่ต้องการ ให้โหลด detail file เฉพาะหมวดที่เกี่ยวข้อง:
+   - `knowledge/interest-detail-interests.md`
+   - `knowledge/interest-detail-business-commerce.md`
+   - `knowledge/interest-detail-lifestyle-consumer.md`
+   - `knowledge/interest-detail-line-signals.md`
+3. ถ้า detail file ยังไม่มี segment ที่ต้องการ ค่อยเรียก list_advanced_targeting_codes(campaign_objective="GAIN_FRIENDS", country="TH", locale="th")
+4. เลือกเฉพาะ code ที่ selectable=true
+5. ส่งผ่าน `interest_codes` สำหรับ audience pool แบบกว้าง
+6. ส่งผ่าน `interest_groups` สำหรับ narrow/intersection เช่น [["4"], ["12"]]
+7. เมื่อมี `interest_codes` หรือ `interest_groups` tool ต้องใช้:
    targetingMode="MANUAL"
    includeAdvancedTargetings=[{"interests": ["..."]}]
 ```

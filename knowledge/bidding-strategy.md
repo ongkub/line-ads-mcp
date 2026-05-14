@@ -20,10 +20,16 @@
 ```
 ใช้ Auto ก่อนเสมอ (2–3 วันแรก)
 Switch ไป Manual ถ้า:
-  - ใช้จ่ายไม่ครบ budget (underspend)
-  - CPC/CPF สูงกว่าที่รับได้มาก
+  - Spend < 60% ของ daily budget ติดต่อกัน 3 วัน (underspend)
+  - CPF/CPC/CPA สูงกว่า benchmark tier สูงสุด ติดต่อกัน > 2 วัน
+  - Learning phase เสร็จ (> 14 วัน) แล้ว result ยังไม่ดีเมื่อเทียบ benchmark
   - ต้องการ control ราคาเพดาน
 ```
+
+ก่อน switch:
+- โหลด `knowledge/kpi-benchmarks.md` เพื่อเทียบ objective + industry tier
+- ห้ามเลือกตัวเลข manual bid แทน user ให้เสนอช่วงอ้างอิง แล้วถาม user ระบุเลขเอง
+- ถ้า campaign อายุ < 3 วัน ให้ระวังการสรุป เพราะยังอยู่ช่วง learning/early delivery
 
 ## Learning Phase
 

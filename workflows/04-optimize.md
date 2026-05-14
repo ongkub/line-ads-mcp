@@ -69,7 +69,7 @@ Hard stop:
 - `workflows/04-optimize.md` — ใช้ยืนยัน dry-run/confirm/snapshot rules
 
 โหลดเพิ่มตามจังหวะ:
-- ถ้าจะปรับ targeting/interest: อ่าน `knowledge/interest-catalog.md` ก่อน แล้วค่อยเรียก code lookup เฉพาะจำเป็น
+- ถ้าจะปรับ targeting/interest: อ่าน `knowledge/interest-catalog-INDEX.md` ก่อน แล้วค่อยโหลด `knowledge/interest-detail-*.md` เฉพาะหมวดหรือเรียก code lookup เฉพาะจำเป็น
 - ถ้าจะเปลี่ยน creative/upload media: อ่าน `knowledge/ad-specs.md` ก่อน
 
 Rule สำคัญ:
@@ -119,6 +119,29 @@ Rule สำคัญ:
 ## Phase 3 — Diagnose
 
 โหลด `knowledge/kpi-benchmarks.md` เฉพาะตอนวิเคราะห์ benchmark
+
+### Sequential Check
+
+เช็คตามลำดับนี้ก่อน pattern matching เสมอ เพื่อไม่วิเคราะห์ metric ที่ยังไม่ควรถูกใช้:
+
+```
+Step 1: Campaign/adset status
+  - ถ้า PAUSED/ENDED/REMOVED → หยุดที่ status issue ก่อน
+
+Step 2: Creative review status
+  - ถ้า IN_REVIEW → แจ้งว่ายังประเมิน performance ไม่ได้
+  - ถ้า REJECTED → อ่าน reason; ถ้า POLICY_VIOLATION ต้องแก้ copy/image ใหม่ ไม่ใช่ resubmit เดิม
+
+Step 3: Impressions
+  - ถ้า Impressions = 0 → ตรวจ bid, targeting, account/payment, review, audience size
+
+Step 4: Results
+  - ถ้า Results = 0 แต่ Impressions > 0 → ตรวจ creative, offer, bid cap, targeting fit
+
+Step 5: Cost + quality
+  - ถ้า cost สูงและ result ดี → เสนอ scale up แต่ให้ user ระบุตัวเลขเอง
+  - ถ้า cost สูงและ result แย่ → เสนอ creative/targeting/bid diagnosis
+```
 
 Patterns:
 
@@ -236,7 +259,7 @@ Rules:
 ### Change Targeting / Interest
 
 ```
-list_advanced_targeting_codes
+อ่าน knowledge/interest-catalog-INDEX.md → detail file เฉพาะหมวด → list_advanced_targeting_codes เฉพาะเมื่อ cache ไม่พอ
 update_adset(interest_codes=[...], targeting fields...)
 ```
 

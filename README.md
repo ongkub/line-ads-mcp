@@ -228,7 +228,7 @@ Tool รับค่า THB ปกติ (float) แล้วแปลง micro 
 
 LINE Ads API ไม่รับชื่อ interest ตรง ๆ เช่น `Marketing`, `Branding`, `Advertising`, `Business` ต้องใช้ official code เท่านั้น
 
-ให้ใช้ [knowledge/interest-catalog.md](knowledge/interest-catalog.md) เป็น local cache ก่อน เพื่อประหยัด API calls แล้วค่อยเรียก `list_advanced_targeting_codes` เฉพาะเมื่อไม่มี segment ใน cache, objective/country/locale เปลี่ยน, API reject code, หรือต้องการ audience size ล่าสุด
+ให้ใช้ [knowledge/interest-catalog-INDEX.md](knowledge/interest-catalog-INDEX.md) เป็น local cache ชั้นแรกก่อน เพื่อประหยัด tokens/API calls แล้วค่อยโหลด `knowledge/interest-detail-*.md` เฉพาะหมวดที่ต้องใช้ หรือเรียก `list_advanced_targeting_codes` เฉพาะเมื่อไม่มี segment ใน cache, objective/country/locale เปลี่ยน, API reject code, หรือต้องการ audience size ล่าสุด
 
 สำหรับ `TH + GAIN_FRIENDS` ที่ทดสอบจริง:
 

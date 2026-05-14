@@ -65,6 +65,7 @@ Read-only tools เรียกได้เลย ไม่ต้อง confirm 
 Rule สำคัญ:
 - MODE 3 เป็น read-only; ห้าม pause/resume/update budget จาก report workflow
 - ต้องบอกช่วงวันที่ของ report ทุกครั้ง
+- ต้องระบุ timezone เป็น Asia/Bangkok/+07:00 ทุกครั้ง เพื่อกัน report date คลาดจาก GMT
 - ถ้า data น้อยหรือ campaign อายุ < 7 วัน ต้องแจ้งว่า insight ยัง limited
 
 ---
@@ -136,6 +137,22 @@ Money safety:
 
 ## Phase 3 — Scheduled Task Prompt Template
 
+### Session Context Capture
+
+ก่อนสร้าง scheduled task หลัง campaign/adset/ad สร้างเสร็จ ให้บันทึก context ลง prompt ทันทีเพื่อไม่ต้องถาม user ใหม่ใน scheduled run:
+
+```
+- ad_account_id
+- campaign_id + campaign name + objective
+- daily_budget (บาท)
+- bid_strategy + bid_amount/cost cap ถ้ามี
+- adset_id/name + targeting summary
+- age range, gender, location, interest codes/interest groups
+- ad_id/name + creative status ถ้ามี
+- start date/time + timezone
+- reporting objective metric เช่น Friends, Clicks, Conversions, Views
+```
+
 Prompt สำหรับ scheduled task:
 
 ```text
@@ -155,8 +172,12 @@ Campaign Context:
 - Campaign: [name/id]
 - Objective: [objective]
 - Budget: ฿[X]/วัน
-- Bid/cost cap: ฿[Y]
-- Targeting summary: [summary]
+- Bid strategy/cost cap: [strategy + ฿Y หรือ none]
+- Adsets: [adset_id/name/status]
+- Targeting summary: [age, gender, location, interest codes/groups]
+- Ads: [ad_id/name/review status]
+- Start date/timezone: [YYYY-MM-DD HH:mm +07:00]
+- Primary metric: [Friends/Clicks/Conversions/Views]
 
 งาน:
 1. ดึง report ตาม schedule
