@@ -6,14 +6,31 @@
 
 ## Objective → Recommended Bidding
 
-| Objective | Bidding แนะนำ | Budget ขั้นต่ำ/วัน |
-|---|---|---|
-| Friend Added | CPF Auto | ฿100 |
-| Website Clicks | CPC Auto | ฿100 |
-| Conversion | Target CPA (ถ้ามี tracking) / CPC | ฿300 |
-| Reach | CPM Auto | ฿50 |
-| App Install | CPC Auto | ฿100 |
-| Video Views | CPV Auto | ฿50 |
+| Objective | Bid Type | Bid Strategy | Budget ขั้นต่ำ/วัน |
+|---|---|---|---|
+| GAIN_FRIENDS | CPF | COST_CAP / LOWEST_COST | ฿100 |
+| WEBSITE_TRAFFIC | CPC | COST_CAP / LOWEST_COST | ฿100 |
+| CONVERSIONS | CPC | COST_CAP | ฿300 |
+| REACH | CPM | LOWEST_COST | ฿50 |
+| APP_INSTALL | CPC | COST_CAP / LOWEST_COST | ฿100 |
+| VIDEO_VIEW | CPV | LOWEST_COST | ฿50 |
+
+## Real Cost Reference (ข้อมูลจริงจาก LINE Ads TH)
+
+> ดูตาราง CPC × Industry และ CPC × Ad Format ฉบับเต็มได้ที่ `knowledge/kpi-benchmarks.md`
+
+Cost สำหรับ objective ยอดนิยม (ช่วงกลาง อ้างอิง):
+
+| Objective | Cost ปกติ |
+|---|---|
+| GAIN_FRIENDS | CPF ฿10-22 (ขึ้นกับ industry) |
+| WEBSITE_TRAFFIC (VISIT_MY_WEBSITE) | CPC ฿1.70-3.50 |
+| REACH | CPM ฿6-8 |
+| VIDEO_VIEW | CPV ฿0.02-0.09 |
+| APP_INSTALL | CPC ฿0.90-3.70 |
+| WEBSITE_CONVERSION | CPC ฿1.90-3.40 |
+
+หมายเหตุ: GAIN_FRIENDS มี CPF สูงที่สุดในกลุ่ม fitnessAndMedicalService (฿22.58) และต่ำที่สุดใน lawAndGovernment (฿10.34)
 
 ## เมื่อไรใช้ Manual Bid
 

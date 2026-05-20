@@ -47,6 +47,96 @@
 | ฿5–฿10 | สูง | ตรวจ audience |
 | สูงกว่า ฿10 | สูงมาก | ปรับ bidding หรือ targeting |
 
+## Real CPC Benchmark — Industry × Objective (THB, ข้อมูลจริง)
+
+> ตารางนี้มาจากข้อมูลจริงของ LINE Ads TH ใช้เป็น reference เพื่อประเมิน cost ตาม industry + objective
+
+| Industry | APP_ENGAGEMENT | APP_INSTALL | GAIN_FRIENDS | REACH | VIDEO_VIEW | VISIT_MY_WEBSITE | WEBSITE_CONVERSION |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| automotive | 2.83 | 1.66 | 15.34 | 3.79 | 11.61 | 1.81 | 2.27 |
+| beauty | — | — | 20.06 | 5.95 | 10.04 | 2.24 | 1.91 |
+| careerAndBusiness | 2.91 | 3.11 | 19.56 | 3.28 | 20.51 | 1.94 | 2.31 |
+| cosme | — | — | 17.02 | 3.82 | 10.96 | 1.89 | 1.94 |
+| cpg | — | — | 14.44 | 3.49 | 9.14 | 3.47 | 2.58 |
+| education | — | 0.90 | 17.77 | 3.10 | 19.02 | 1.79 | 3.35 |
+| entertainmentAndMedia | — | 1.44 | 17.54 | 3.09 | 7.79 | 2.09 | 1.86 |
+| familyAndSociety | — | 1.25 | 16.79 | 3.46 | 10.06 | 1.89 | 2.10 |
+| fashion | 2.91 | 1.62 | 13.92 | 3.74 | 12.25 | 1.73 | 2.92 |
+| financialServices | 3.10 | 2.17 | 12.22 | 3.92 | 15.74 | 2.08 | 2.82 |
+| fitnessAndMedicalService | — | 1.99 | 22.58 | 3.90 | 12.46 | 2.09 | 2.15 |
+| foodAndDrink | 4.16 | 2.37 | 15.01 | 3.48 | 13.23 | 2.05 | 1.88 |
+| game | 1.83 | 2.23 | 24.56 | 5.79 | 17.48 | 2.35 | 2.22 |
+| healthFood | — | — | 16.65 | 3.89 | 10.98 | 1.69 | 1.93 |
+| lawAndGovernment | — | 1.60 | 10.34 | 4.90 | 10.95 | 2.05 | 2.58 |
+| leisureAndSportsAndLifestyle | — | 1.32 | 13.45 | 3.94 | 11.31 | 1.90 | 2.69 |
+| realEstate | — | — | 19.18 | 3.83 | 11.07 | 1.84 | 2.82 |
+| shopping | 3.54 | 2.97 | 14.49 | 3.44 | 12.53 | 1.86 | 3.10 |
+| technology | 0.91 | 2.07 | 18.40 | 3.77 | 12.51 | 2.30 | 2.56 |
+| travel | — | — | 13.42 | 3.47 | 9.74 | 2.07 | 2.78 |
+
+> หมายเหตุ: GAIN_FRIENDS CPC ≈ CPF จริง (cost per friend) ไม่ใช่ cost per click
+
+## Real CPM Benchmark — Industry × REACH (THB)
+
+| Industry | CPM (REACH) |
+|---|---:|
+| automotive | 6.69 |
+| beauty | 7.60 |
+| careerAndBusiness | 6.69 |
+| cosme | 6.99 |
+| cpg | 6.55 |
+| education | 5.94 |
+| entertainmentAndMedia | 7.47 |
+| familyAndSociety | 6.59 |
+| fashion | 7.50 |
+| financialServices | 7.54 |
+| fitnessAndMedicalService | 6.56 |
+| foodAndDrink | 6.73 |
+| game | 7.79 |
+| healthFood | 6.71 |
+| lawAndGovernment | 6.81 |
+| leisureAndSportsAndLifestyle | 7.36 |
+| realEstate | 6.66 |
+| shopping | 7.65 |
+| technology | 7.53 |
+| travel | 6.25 |
+
+## Real CPC Benchmark — Ad Format × Objective (THB)
+
+| Ad Format | APP_ENGAGEMENT | APP_INSTALL | GAIN_FRIENDS | REACH | VIDEO_VIEW | VISIT_MY_WEBSITE | WEBSITE_CONVERSION |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| ANIMATED IMAGE | 3.86 | 2.12 | 16.97 | 4.04 | — | 1.81 | 2.65 |
+| CAROUSEL | 4.36 | 1.72 | — | 3.28 | — | 1.98 | 2.80 |
+| IMAGE | 3.18 | 2.18 | 15.26 | 3.44 | — | 1.96 | 2.72 |
+| SMALL IMAGE | 3.06 | 1.59 | 17.13 | 3.86 | — | 1.54 | 2.08 |
+| SMALL VIDEO | — | 1.78 | 16.70 | 4.38 | 4.31 | 3.68 | 2.40 |
+| VIDEO | 3.41 | 3.66 | 18.68 | 11.27 | 13.95 | 8.22 | 5.53 |
+
+## Real CPV Benchmark — VIDEO_VIEW (THB)
+
+| Industry | CPV |
+|---|---:|
+| automotive | 0.02 |
+| beauty | 0.03 |
+| careerAndBusiness | 0.08 |
+| cosme | 0.03 |
+| cpg | 0.05 |
+| education | 0.09 |
+| entertainmentAndMedia | 0.04 |
+| familyAndSociety | 0.03 |
+| fashion | 0.04 |
+| financialServices | 0.04 |
+| fitnessAndMedicalService | 0.03 |
+| foodAndDrink | 0.04 |
+| game | 0.03 |
+| healthFood | 0.03 |
+| lawAndGovernment | 0.03 |
+| leisureAndSportsAndLifestyle | 0.02 |
+| realEstate | 0.02 |
+| shopping | 0.03 |
+| technology | 0.05 |
+| travel | 0.03 |
+
 ## Budget Alert Thresholds
 
 | เหลือ | Action |
