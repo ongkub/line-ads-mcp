@@ -112,6 +112,48 @@
 | SMALL VIDEO | — | 1.78 | 16.70 | 4.38 | 4.31 | 3.68 | 2.40 |
 | VIDEO | 3.41 | 3.66 | 18.68 | 11.27 | 13.95 | 8.22 | 5.53 |
 
+## Real CTR Benchmark — Industry × Objective (อัตราส่วน เช่น 0.0012 = 0.12%)
+
+> CTR ของ LINE Ads ต่ำกว่า Facebook/Google เป็นปกติ เพราะ format ใน feed ต่างกัน
+
+| Industry | APP_ENGAGEMENT | APP_INSTALL | GAIN_FRIENDS | REACH | VIDEO_VIEW | VISIT_MY_WEBSITE | WEBSITE_CONVERSION |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| automotive | 0.28% | 4.91% | 0.12% | 0.18% | 0.10% | 0.87% | 0.45% |
+| beauty | — | — | 0.08% | 0.19% | 0.06% | 0.44% | 0.41% |
+| careerAndBusiness | 0.32% | 0.18% | 0.11% | 0.22% | 0.07% | 0.51% | 0.44% |
+| cosme | — | — | 0.11% | 0.19% | 0.10% | 0.49% | 0.55% |
+| cpg | — | — | 0.14% | 0.17% | 0.09% | 0.34% | 0.65% |
+| education | — | 0.23% | 0.10% | 1.52% | 0.06% | 0.31% | 0.39% |
+| entertainmentAndMedia | — | 1.02% | 0.10% | 0.26% | 0.09% | 1.01% | 0.34% |
+| familyAndSociety | — | 0.15% | 0.14% | 0.20% | 0.07% | 0.82% | 0.49% |
+| fashion | 0.09% | 0.28% | 0.11% | 0.22% | 0.16% | 0.53% | 0.73% |
+| financialServices | 1.66% | 0.66% | 0.16% | 0.19% | 0.06% | 0.45% | 0.54% |
+| fitnessAndMedicalService | — | 0.48% | 0.08% | 0.18% | 0.09% | 0.46% | 2.03% |
+| foodAndDrink | 0.29% | 0.29% | 0.13% | 0.20% | 0.14% | 0.45% | 0.53% |
+| game | 0.27% | 0.35% | 0.10% | 0.19% | 0.04% | 0.40% | 0.47% |
+| healthFood | — | — | 0.14% | 0.26% | 0.08% | 5.42% | 0.83% |
+| lawAndGovernment | — | 0.98% | 0.19% | 0.16% | 0.06% | 0.69% | 0.41% |
+| leisureAndSportsAndLifestyle | — | 0.32% | 0.14% | 0.30% | 0.09% | 0.46% | 0.64% |
+| realEstate | — | — | 0.10% | 0.77% | 0.08% | 0.48% | 0.48% |
+| shopping | 0.33% | 0.38% | 0.13% | 0.23% | 0.20% | 0.44% | 0.72% |
+| technology | 0.36% | 0.28% | 0.14% | 0.36% | 0.09% | 0.40% | 1.02% |
+| travel | — | — | 0.14% | 0.18% | 0.11% | 0.41% | 0.69% |
+
+> GAIN_FRIENDS CTR ต่ำกว่า objective อื่นมากเป็นปกติ (0.08-0.19%) เพราะวัด friend add ไม่ใช่ click
+
+## Real CTR Benchmark — Ad Format × Objective
+
+| Ad Format | APP_ENGAGEMENT | APP_INSTALL | GAIN_FRIENDS | REACH | VIDEO_VIEW | VISIT_MY_WEBSITE | WEBSITE_CONVERSION |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| ANIMATED IMAGE | 0.38% | 1.07% | 0.12% | 0.26% | — | 0.76% | 0.77% |
+| CAROUSEL | 0.44% | 0.42% | — | 0.24% | — | 0.61% | 0.63% |
+| IMAGE | 0.37% | 0.39% | 0.11% | 0.20% | — | 0.47% | 0.56% |
+| SMALL IMAGE | 0.30% | 0.27% | 0.09% | 0.19% | — | 0.67% | 0.73% |
+| SMALL VIDEO | — | 0.53% | 0.11% | 0.20% | 0.15% | 0.26% | 0.61% |
+| VIDEO | 0.58% | 1.18% | 0.12% | 0.08% | 0.07% | 0.13% | 0.66% |
+
+> ANIMATED IMAGE มี CTR สูงสุดสำหรับ APP_INSTALL และ WEBSITE_CONVERSION — ใช้เป็น A/B test option
+
 ## Real CPV Benchmark — VIDEO_VIEW (THB)
 
 | Industry | CPV |
