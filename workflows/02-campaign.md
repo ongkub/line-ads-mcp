@@ -1,6 +1,6 @@
 # workflows/02-campaign.md
 # Campaign + Ad Set + Ad Creation
-# Version 3.0 | May 2026 | MCP-first
+# Version 3.2 | May 2026 | MCP-first
 
 ---
 
@@ -91,18 +91,32 @@ Hard stop:
 
 ## Phase 1 — Intake
 
-ถามเฉพาะข้อมูลที่ยังขาด:
+ถามตามลำดับ **Campaign → Ad Set → Ad** เท่านั้น อย่าถามข้อมูล Ad ก่อนที่ Campaign/Ad Set จะชัดเจน
+
+### 1A — Campaign Level (ถามก่อน)
 
 | ข้อมูล | คำถาม | Required |
 |---|---|---|
-| สินค้า/บริการ | อยากลงโฆษณาสินค้าหรือบริการอะไรครับ? | ใช่ |
-| Objective | เพิ่มเพื่อน / เข้าเว็บ / Reach / Conversion / App install / Video | ใช่ |
-| Budget | งบประมาณต่อวันกี่บาทครับ? | ใช่ |
-| Bid/cost cap | CPF/CPC/CPA/bid cap อยากตั้งไว้กี่บาทครับ? | ถ้าใช้ cost cap |
-| Start date | วันเวลาเริ่มโฆษณาเมื่อไหร่? เช่น `2026-05-14T09:00:00+07:00` | ใช่ |
-| Targeting | อายุ เพศ พื้นที่ interest/custom audience | ใช่ |
-| Creative | มีรูป/วิดีโอและข้อความไหม? | ก่อนสร้าง ad |
-| Landing/OA | URL หรือ LINE OA objective | ตาม objective |
+| เป้าหมายธุรกิจ | อยากให้แคมเปญนี้ทำอะไรครับ? เช่น เพิ่มเพื่อน OA / เข้าเว็บ / Conversion | ใช่ |
+| Budget | งบประมาณต่อวันกี่บาทครับ? (หรืองบรวมทั้งหมด?) | ใช่ |
+| Start date | เริ่มยิงวันไหนครับ? | ใช่ |
+
+### 1B — Ad Set Level (ถามหลัง Campaign ชัดแล้ว)
+
+| ข้อมูล | คำถาม | Required |
+|---|---|---|
+| กลุ่มเป้าหมาย | เน้นคนกลุ่มไหนครับ? อายุ เพศ อาชีพ ความสนใจ | ใช่ |
+| จำนวน Ad Set | อยากแบ่งกลุ่มเป้าหมายเป็นกี่กลุ่มเพื่อ compare ครับ? | ใช่ |
+| Bid/cost cap | CPF/CPC/CPA สูงสุดกี่บาทครับ? | ถ้าใช้ cost cap |
+
+### 1C — Ad Level (ถามสุดท้าย หลัง Ad Set ชัดแล้ว)
+
+| ข้อมูล | คำถาม | Required |
+|---|---|---|
+| Creative | มีรูป 1080×1080 และรูปเล็ก 600×400 ไหมครับ? | ใช่ |
+| Title / Description | ข้อความหัวโฆษณาและคำอธิบาย (สูงสุด 20 ตัวอักษร) | ใช่ |
+| Long Title | ชื่อยาวสำหรับ Smart Channel (บังคับเมื่อมีรูปเล็ก) | ถ้ามีรูปเล็ก |
+| Landing/OA | URL หรือ LINE OA | ตาม objective |
 
 ### Objective Mapping
 
@@ -350,13 +364,23 @@ Sensitive upload เช่น phone/email customer list ให้ default เป
 
 ## Ad Set Strategy
 
+### หลักการ: หลาย Ad Set = หลาย Interest Group เพื่อ Compare
+
+**ห้ามแนะนำ Broad targeting** ไม่ว่ากรณีใด — ไม่มี "Broad adset" ในแผนเลย
+
+Multiple Ad Sets หมายถึงการแบ่ง **Interest/Behavior กลุ่มที่ต่างกัน** เพื่อ compare ว่ากลุ่มไหน perform ดีกว่า เช่น:
+- Adset A: Interest = อาชีพและธุรกิจ + พฤติกรรมผู้จัดการ
+- Adset B: Interest = เทคโนโลยี + พฤติกรรมการซื้อสูง
+- Adset C: Interest = การศึกษา + ผู้ประกอบการ
+
 สำหรับงบน้อยกว่า ฿500/วัน:
-- ใช้ 1 adset ก่อน เพื่อให้ data ไม่กระจาย
+- ใช้ **1 adset** — เลือก Interest/Behavior กลุ่มที่ match ที่สุด
+- เหตุผล: งบน้อยถ้าแตกหลาย adset แต่ละกลุ่มจะได้ข้อมูลไม่พอสรุป
 
 สำหรับงบมากกว่า/เท่ากับ ฿500/วัน:
-- Broad adset
-- Interest adset
-- Custom/lookalike adset ถ้ามีข้อมูลลูกค้าเพียงพอและ feature เปิดแล้ว
+- ถามว่าอยากแบ่งกี่ Interest Group เพื่อ compare
+- แต่ละ adset = Interest กลุ่มต่างกัน เช่น กลุ่ม 1, กลุ่ม 2, กลุ่ม 3
+- Custom/lookalike adset ถ้ามีข้อมูลลูกค้าเพียงพอ
 
 อย่าลดจำนวน adset/ad จากแผนที่ user confirm เอง
 
@@ -433,5 +457,7 @@ Sensitive upload เช่น phone/email customer list ให้ default เป
 
 ---
 
-*Version 3.0 | May 2026*
+*Version 3.2 | May 2026*
 *Updated: MCP-first architecture, interest code lookup, media upload/create_ad flow, API write safety, browser fallback scope*
+*v3.1: Goal-first intake, LINE Tag pre-check, min budget table, image spec warning, small image recommendation, debug discipline*
+*v3.2: Intake order Campaign→AdSet→Ad, ห้าม Broad targeting, multiple adsets = multiple Interest groups for compare*

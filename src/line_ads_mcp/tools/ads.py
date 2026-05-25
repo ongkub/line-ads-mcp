@@ -93,25 +93,33 @@ async def create_ad(
     title: str,
     call_to_action: str,
     ad_account_id: str | None = None,
+    campaign_id: str | None = None,
     creative_format: str = "IMAGE",
     description: str | None = None,
+    long_title: str | None = None,
     destination_url: str | None = None,
+    small_image_hash: str | None = None,
     dry_run: bool = True,
 ) -> dict[str, Any]:
     """Create an ad with verified payload structure.
 
-    Verified from real LINE Ads API:
+    Verified from real LINE Ads API (inspected from LINE Ads Manager network request):
     - creative is a nested object (not flat fields)
     - image is referenced by imageHash (returned from upload_media), not mediaId
     - title maps to creative.title (not headline)
     - callToAction is a nested object {"type": "ADD_FRIEND"}, not a string
     - For GAIN_FRIENDS campaigns, destination_url is not needed (tied to LINE OA)
+    - small_image_hash: smallImageHash inside creative (600×400px for Smart Channel)
+      ⚠️ เมื่อใส่ small_image_hash ต้องใส่ long_title ด้วย (LINE Ads บังคับ)
+    - campaignId + configuredStatus + smallDelivery ต้องส่งด้วยตาม API spec
     """
     try:
         require_one_of(call_to_action, CALL_TO_ACTIONS, "call_to_action")
         require_one_of(creative_format, CREATIVE_FORMATS, "creative_format")
         _validate_ad_text(title, "title")
         _validate_ad_text(description, "description")
+        if small_image_hash and not long_title:
+            raise LineAdsAPIError(400, "ต้องระบุ long_title เมื่อใช้ small_image_hash (600×400px) — LINE Ads บังคับ", "VALIDATION_ERROR")
         if destination_url and not destination_url.startswith("https://"):
             raise LineAdsAPIError(400, "destination_url ต้องขึ้นต้นด้วย https://", "VALIDATION_ERROR")
         config = LineAdsConfig.from_env()
@@ -121,15 +129,20 @@ async def create_ad(
             "creativeFormat": creative_format,
             "title": title,
             "description": description,
+            "longTitle": long_title,
             "imageHash": image_hash,
+            "smallImageHash": small_image_hash,
             "callToAction": {"type": call_to_action},
             "destinationUrl": destination_url,
         })
-        payload = {
+        payload = clean_dict({
+            "campaignId": campaign_id,
             "adgroupId": adset_id,
             "name": name,
+            "configuredStatus": "ACTIVE",
+            "smallDelivery": False,
             "creative": creative,
-        }
+        })
         endpoint = f"/adaccounts/{account_id}/ads"
         if dry_run:
             return dry_run_response("create_ad", endpoint, payload)
