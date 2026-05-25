@@ -7,6 +7,84 @@ MCP server สำหรับให้ Claude เรียก LINE Ads API v3 �
 
 ---
 
+## ⚡ ติดตั้งด้วย Claude Cowork (วิธีที่ง่ายที่สุด)
+
+ไม่ต้องพิมพ์คำสั่งเอง — ก้อปวาง prompt ด้านล่างนี้ใน **Claude Desktop (Cowork mode)** แล้วให้ Claude ทำให้ทั้งหมด:
+
+```
+ช่วย setup LINE Ads MCP Server ให้หน่อยครับ
+
+ขั้นตอนที่ต้องทำ:
+1. Clone repo: https://github.com/ongkub/line-ads-mcp.git
+   - แนะนำ path เช่น ~/line-ads-mcp หรือ ~/Desktop/line-ads-mcp
+   - ถ้า folder มีอยู่แล้วให้ git pull แทน
+
+2. ติดตั้ง dependencies:
+   cd <path ที่ clone มา>
+   python3 -m venv .venv
+   source .venv/bin/activate   # Windows: .venv\Scripts\activate
+   pip install -e .
+
+3. สร้างไฟล์ .env จาก .env.example:
+   cp .env.example .env
+   - แล้วถามฉันว่า LINE_ADS_ACCESS_KEY, LINE_ADS_SECRET_KEY, LINE_ADS_AD_ACCOUNT_ID คืออะไร
+   - (หาได้ที่ LINE Ads Manager → Settings → API Management)
+   - เติมค่าเหล่านั้นลงใน .env ให้เลย
+
+4. อัปเดต claude_desktop_config.json ให้เพิ่ม MCP server block นี้:
+   {
+     "mcpServers": {
+       "line-ads": {
+         "command": "<absolute path ของ .venv/bin/python>",
+         "args": ["-m", "line_ads_mcp.server"],
+         "cwd": "<absolute path ของ repo>",
+         "env": {
+           "LINE_ADS_ACCESS_KEY": "<จาก .env>",
+           "LINE_ADS_SECRET_KEY": "<จาก .env>",
+           "LINE_ADS_AD_ACCOUNT_ID": "<จาก .env>"
+         }
+       }
+     }
+   }
+   - macOS: ~/Library/Application Support/Claude/claude_desktop_config.json
+   - Windows: %APPDATA%\Claude\claude_desktop_config.json
+   - ถ้าไฟล์มี mcpServers อยู่แล้ว ให้เพิ่ม "line-ads" เข้าไป อย่า overwrite ของเดิม
+
+5. แจ้งฉันว่าทำสำเร็จหรือไม่ และให้บอกว่าต้อง Quit แล้วเปิด Claude Desktop ใหม่เพื่อโหลด MCP
+
+ระหว่างทำ ถ้าขาดข้อมูลไหน ให้ถามฉันทีละอย่างครับ
+```
+
+> **หมายเหตุ:** หลัง Claude Cowork ทำสำเร็จ ต้อง **Quit แล้วเปิด Claude Desktop ใหม่** (ไม่ใช่แค่ปิดหน้าต่าง) เพื่อให้โหลด MCP server ใหม่
+
+### ขั้นตอนสุดท้าย — ใส่ System Prompt
+
+หลัง restart แล้ว สร้าง **Project** ใหม่ใน Claude Desktop → **Project Instructions** → ก้อปวางเนื้อหาจาก [`CLAUDE_PROJECT_PROMPT.md`](CLAUDE_PROJECT_PROMPT.md) ทั้งหมด
+
+แค่นี้พร้อมใช้งานเลยครับ
+
+---
+
+### อัปเดตเวอร์ชันใหม่ด้วย Claude Cowork
+
+เมื่อมีอัปเดตบน GitHub ให้วาง prompt นี้:
+
+```
+ช่วย update LINE Ads MCP Server ให้หน่อยครับ
+
+repo อยู่ที่: https://github.com/ongkub/line-ads-mcp.git
+folder ในเครื่องอยู่ที่: (บอก path)
+
+ทำตามขั้นตอน:
+1. cd เข้า folder นั้น
+2. git pull --rebase origin main
+3. source .venv/bin/activate && pip install -e .
+4. python -m pytest (ถ้า test ไม่ผ่านให้แจ้งฉัน)
+5. แจ้งว่าต้อง Quit และเปิด Claude Desktop ใหม่
+```
+
+---
+
 ## สำหรับนักการตลาด — ใช้งานผ่าน AI
 
 ไม่ต้องเขียนโค้ด ไม่ต้องเปิด LINE Ads Manager ทุกครั้ง — คุยกับ AI แล้วให้มันดึงข้อมูลและจัดการ campaign แทน
