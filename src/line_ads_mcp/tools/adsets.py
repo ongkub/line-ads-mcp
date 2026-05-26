@@ -17,8 +17,8 @@ TARGETING_MODES = {"AUTO", "MANUAL"}
 #   CPF + GAIN_FRIENDS → FRIEND (required, or API returns error)
 AUTO_BID_TYPES = {"FRIEND", "CLICK", "INSTALL", "VIDEO_VIEW", "REACH"}
 
-# Valid LINE Ads age bracket values for TH (verified by probing)
-VALID_AGES = {15, 18, 20, 25, 30, 35, 40, 45, 50, 54, 55, 60, 65}
+# Valid LINE Ads age bracket values for TH (confirmed from AGENTS.md / real API)
+VALID_AGES = {20, 25, 30, 35, 40, 45, 55, 65}
 
 
 def _build_advanced_targeting_groups(
@@ -64,6 +64,22 @@ def _build_targeting(
     excluded_audience_ids: list[str] | None = None,
     custom_audience_ids: list[str] | None = None,
 ) -> dict[str, Any]:
+    valid_list = sorted(VALID_AGES)
+    if age_min not in VALID_AGES:
+        raise LineAdsAPIError(
+            400,
+            f"age_min={age_min} ไม่ถูกต้อง ค่าที่ LINE Ads รองรับ: {valid_list}",
+            "VALIDATION_ERROR",
+        )
+    if age_max not in VALID_AGES:
+        raise LineAdsAPIError(
+            400,
+            f"age_max={age_max} ไม่ถูกต้อง ค่าที่ LINE Ads รองรับ: {valid_list}",
+            "VALIDATION_ERROR",
+        )
+    if age_min > age_max:
+        raise LineAdsAPIError(400, f"age_min ({age_min}) ต้องน้อยกว่าหรือเท่ากับ age_max ({age_max})", "VALIDATION_ERROR")
+
     has_manual_targeting = bool(genders or interest_codes or interest_groups or behavior_codes or custom_audience_ids)
     mode = targeting_mode or ("MANUAL" if has_manual_targeting else "AUTO")
     require_one_of(mode, TARGETING_MODES, "targeting_mode")
@@ -96,73 +112,6 @@ async def list_adsets(campaign_id: str, ad_account_id: str | None = None) -> dic
         async with LineAdsClient(config) as client:
             data = await client.get(f"/adaccounts/{account_id}/adgroups", params={"campaignId": campaign_id})
         return ok(data)
-    except Exception as error:
-        return handle_tool_error(error)
-
-
-async def get_adset_audience_size(
-    campaign_id: str,
-    ad_account_id: str | None = None,
-) -> dict[str, Any]:
-    """ดึงขนาด Audience ของ Ad Sets ทุกชุดใน Campaign แล้วเปรียบเทียบ balance
-
-    ใช้ GET /adaccounts/{id}/adgroups?campaignId=... พร้อม size=500
-    แล้วดึง paging.totalElements และ adgroupLearning.targetReachRatio
-    เพื่อประเมินว่า audience แต่ละ Ad Set ใหญ่ต่างกันมากไหม
-    """
-    try:
-        config = LineAdsConfig.from_env()
-        account_id = resolve_ad_account_id(ad_account_id, config)
-        async with LineAdsClient(config) as client:
-            data = await client.get(
-                f"/adaccounts/{account_id}/adgroups",
-                params={"campaignId": campaign_id, "size": 500},
-            )
-
-        adsets = data.get("datas", []) if isinstance(data, dict) else []
-        results = []
-        for ag in adsets:
-            learning = ag.get("adgroupLearning", {})
-            targeting = ag.get("targeting", {})
-            results.append({
-                "id": ag.get("id"),
-                "name": ag.get("name"),
-                "status": ag.get("deliveryStatus"),
-                "dailyBudget_thb": round(ag.get("dailyBudgetMicro", 0) / 1_000_000, 2),
-                "targetingMode": targeting.get("targetingMode"),
-                "ageMin": targeting.get("ageMin"),
-                "ageMax": targeting.get("ageMax"),
-                "learningStatus": learning.get("learningStatus"),
-                "targetReachRatio": learning.get("targetReachRatio"),  # ratio ของ audience ที่ถูก reach จริง
-                "interests": [
-                    g.get("interests", [])
-                    for g in targeting.get("includeAdvancedTargetings", [])
-                    if g.get("interests")
-                ],
-                "behaviors": [
-                    g.get("behaviors", [])
-                    for g in targeting.get("includeAdvancedTargetings", [])
-                    if g.get("behaviors")
-                ],
-            })
-
-        # Balance check: เตือนถ้า targetReachRatio ต่างกันเกิน 3x
-        ratios = [r["targetReachRatio"] for r in results if r.get("targetReachRatio")]
-        balance_warning = None
-        if len(ratios) >= 2:
-            max_r, min_r = max(ratios), min(ratios)
-            if min_r > 0 and max_r / min_r > 3:
-                balance_warning = (
-                    f"⚠️ Audience ไม่สมดุล: ratio ต่างกัน {round(max_r/min_r, 1)}x "
-                    f"(max={max_r}, min={min_r}) — ควรปรับ targeting ให้ใกล้กันก่อน compare"
-                )
-
-        return ok({
-            "campaign_id": campaign_id,
-            "adsets": results,
-            "balance_warning": balance_warning,
-            "note": "targetReachRatio = อัตราส่วน audience ที่ campaign reach ได้จริงเทียบกับ target pool (ยิ่งสูง = audience ใหญ่กว่า)",
-        })
     except Exception as error:
         return handle_tool_error(error)
 

@@ -12,7 +12,7 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 
 from line_ads_mcp.tools.ads import create_ad, get_ad_status, list_ads, upload_media
-from line_ads_mcp.tools.adsets import create_adset, get_adset_audience_size, list_adsets, pause_adset, resume_adset, update_adset
+from line_ads_mcp.tools.adsets import create_adset, list_adsets, pause_adset, resume_adset, update_adset
 from line_ads_mcp.tools.audiences import create_audience, list_audiences
 from line_ads_mcp.tools.campaigns import (
     create_campaign,
@@ -107,11 +107,6 @@ TOOLS: dict[str, tuple[str, dict[str, Any], ToolFn]] = {
         schema({"campaign_id": {"type": "string"}, "ad_account_id": {"type": "string"}}, ["campaign_id"]),
         list_adsets,
     ),
-    "get_adset_audience_size": (
-        "เปรียบเทียบขนาด Audience ของ Ad Sets ทุกชุดใน Campaign — แจ้งเตือนถ้า audience ต่างกันเกิน 3x",
-        schema({"campaign_id": {"type": "string"}, "ad_account_id": {"type": "string"}}, ["campaign_id"]),
-        get_adset_audience_size,
-    ),
     "create_adset": (
         "สร้าง ad set/adgroup ใหม่ แบบ dry_run เป็นค่าเริ่มต้น",
         schema(
@@ -124,7 +119,7 @@ TOOLS: dict[str, tuple[str, dict[str, Any], ToolFn]] = {
                 "daily_budget": {"type": "number", "description": "งบต่อวัน หน่วย THB (required)"},
                 "ad_account_id": {"type": "string"},
                 "bid_amount": {"type": "number", "description": "ราคา bid สูงสุด หน่วย THB (required เมื่อ bid_strategy=COST_CAP)"},
-                "age_min": {"type": "integer", "default": 20, "description": "อายุต่ำสุด (ค่าที่ valid: 20, 25, 30, 35, 40, 45, 50, 54, 65)"},
+                "age_min": {"type": "integer", "default": 20, "description": "อายุต่ำสุด (ค่าที่ valid: 20, 25, 30, 35, 40, 45, 55, 65 เท่านั้น — ค่าอื่น API reject)"},
                 "age_max": {"type": "integer", "default": 65, "description": "อายุสูงสุด"},
                 "country": {"type": "string", "default": "TH"},
                 "targeting_mode": {"type": "string", "enum": ["AUTO", "MANUAL"], "description": "ถ้ามี interest_codes ให้ใช้ MANUAL; tool จะเลือกให้เองถ้าไม่ระบุ"},

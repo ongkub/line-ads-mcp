@@ -144,7 +144,7 @@ Default เป็นกรอกเองถ้า user ไม่แน่ใจ
 |---|---|---|---|
 | GAIN_FRIENDS | CPF, จำนวน Friend ใหม่ | CTR, Frequency | ❌ ไม่มี |
 | VIDEO_VIEW | VTR (Completion Rate), CPV | Video View 3s, 25%, 75% | ❌ ไม่มี |
-| VISIT_MY_WEBSITE | CTR, CPC | CPM, Reach | ❌ ไม่มี |
+| WEBSITE_TRAFFIC | CTR, CPC | CPM, Reach | ❌ ไม่มี |
 | REACH | CPM, Reach, Frequency | — | ❌ ไม่มี |
 | APP_INSTALL | CPI, Install Rate | CTR | ❌ ไม่มี |
 | CONVERSIONS | CV, CPA, ROAS | CTR, CVR | ✅ หลัก |
@@ -153,7 +153,7 @@ Default เป็นกรอกเองถ้า user ไม่แน่ใจ
 
 - **GAIN_FRIENDS:** CTR < 0.30% → แนะนำ Refresh Creative | Frequency > 3.5 → เตือน Ad Fatigue | CPF สูงกว่า bid cap > 20% → ตรวจ audience
 - **VIDEO_VIEW:** VTR (Completion) < 15% → แนะนำตัด video ให้สั้นลง
-- **VISIT_MY_WEBSITE:** CTR < 0.20% → แนะนำ Refresh Creative | CPC สูง → ตรวจ bid strategy
+- **WEBSITE_TRAFFIC:** CTR < 0.20% → แนะนำ Refresh Creative | CPC สูง → ตรวจ bid strategy
 - **REACH:** Frequency > 5.0 → เตือน Fatigue | CPM สูงผิดปกติ > 30% → ตรวจ audience size
 - **CONVERSIONS:** CPA spike > 30% → ตรวจ Landing Page + Creative | ROAS < 1.0 → หยุด/ตรวจ
 
@@ -173,8 +173,6 @@ Default เป็นกรอกเองถ้า user ไม่แน่ใจ
 8. **Creative rejected** — reason เช่น `POLICY_VIOLATION` ต้องแก้ copy/image ใหม่ ไม่ใช่ resubmit payload เดิม
 9. **Report timezone** — report ต้องระบุหรือสรุป timezone เป็น Asia/Bangkok/+07:00 เสมอ เพื่อกันวันที่คลาดกับ GMT
 10. **Age bracket ห้าม guess (MODE 2)** — LINE Ads รองรับเฉพาะ ageMin: 20, 25, 30, 35, 40, 45, 55, 65 เท่านั้น ห้ามแนะนำหรือส่งค่าอื่น เช่น 28, 22, 42 → API reject ทันที ถ้า user บอกช่วงที่ไม่ตรง ให้แสดง bracket ที่ valid ให้ user เลือกเอง
-11. **Audience size balance (MODE 2 หลาย Ad Set)** — เมื่อสร้าง Ad Set หลายชุดเพื่อ compare ขนาด Audience ต้องต่างกันไม่เกิน 3× ถ้าต่างมากกว่านี้ให้แจ้ง user และเสนอปรับ targeting ก่อน deploy จริง
-
 ## Self-Audit ทุก ~10 turns
 
 ถ้ารู้สึกว่าตอบยาว / screenshot บ่อย / สร้าง task เยอะเกิน ให้ self-correct:
