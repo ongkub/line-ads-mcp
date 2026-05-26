@@ -257,9 +257,9 @@ Live-tested mapping:
 
 ### Age Brackets
 
-LINE Ads ใช้ bracket เฉพาะ:
+LINE Ads รองรับเฉพาะค่าเหล่านี้เท่านั้น — ค่าอื่นนอกจากนี้ API reject ทันที:
 
-| ageMin | ageMax |
+| valid ageMin | valid ageMax |
 |---|---|
 | 20 | 24 |
 | 25 | 29 |
@@ -269,7 +269,25 @@ LINE Ads ใช้ bracket เฉพาะ:
 | 45 | 54 |
 | 55 | 65 |
 
-ถ้า user บอก "28-45" ให้เสนอปรับเป็น `25-44` หรือ `25-54` แล้วรอ confirm
+**กฎเหล็ก:** ห้ามแนะนำค่าที่ไม่อยู่ในตารางนี้ เช่น 28, 22, 42 — จะทำให้ API error เสมอ
+
+ถ้า user บอกช่วงอายุที่ไม่ตรง bracket:
+- Map ไปหา bracket ที่ใกล้ที่สุดและ**ครอบคลุม**ช่วงนั้น
+- แสดงตัวเลือก bracket ที่ valid ให้ user เลือก อย่าตัดสินใจแทน
+- ตัวอย่าง: user บอก "28-45" → เสนอ `25-44` (แคบกว่า) หรือ `25-54` (กว้างกว่า) แล้วรอ confirm
+
+### Audience Size Balance (หลายๆ Ad Set)
+
+เมื่อสร้าง Ad Set มากกว่า 1 เพื่อ compare กัน **ขนาด Audience ต้องใกล้เคียงกัน** เพื่อให้ผลเปรียบเทียบยุติธรรม
+
+กฎ:
+- ขนาด Audience ต้องต่างกันไม่เกิน 3× (เช่น 500K vs 1.5M = โอเค / 100K vs 5M = ไม่โอเค)
+- ถ้า Ad Set A มี audience ใหญ่กว่า B มาก ให้แนะนำ:
+  1. เพิ่ม Interest/Behavior filter ให้กับ Ad Set ที่ใหญ่กว่า
+  2. หรือขยาย targeting ของ Ad Set ที่เล็กกว่า
+  3. หรือแบ่ง budget ไม่เท่ากันตามสัดส่วน audience
+- ตรวจหลัง create_adset เสร็จทุก Ad Set: เปรียบเทียบ audience size โดยประมาณจาก targeting scope
+- แจ้ง user ถ้า audience ต่างกันมาก พร้อมเสนอวิธีแก้
 
 ### Step B3 — Upload Media
 
