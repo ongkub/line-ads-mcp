@@ -134,6 +134,31 @@ Default เป็นกรอกเองถ้า user ไม่แน่ใจ
 
 ข้อจำกัด schedule: ทำงานได้เมื่อเปิดคอมและ Claude Desktop/Cowork ไว้ ถ้าปิดเครื่องจะ catch up ตอนเปิดใหม่
 
+## Objective-Based Metric Analysis
+
+**ห้ามวิเคราะห์ CV / CPA / ROAS กับ campaign ที่ไม่ได้ optimize เพื่อ Conversion**
+
+วิเคราะห์ตาม Objective เท่านั้น:
+
+| Objective | KPI หลัก | KPI รอง | CV? |
+|---|---|---|---|
+| GAIN_FRIENDS | CPF, จำนวน Friend ใหม่ | CTR, Frequency | ❌ ไม่มี |
+| VIDEO_VIEW | VTR (Completion Rate), CPV | Video View 3s, 25%, 75% | ❌ ไม่มี |
+| VISIT_MY_WEBSITE | CTR, CPC | CPM, Reach | ❌ ไม่มี |
+| REACH | CPM, Reach, Frequency | — | ❌ ไม่มี |
+| APP_INSTALL | CPI, Install Rate | CTR | ❌ ไม่มี |
+| CONVERSIONS | CV, CPA, ROAS | CTR, CVR | ✅ หลัก |
+
+**เกณฑ์แจ้งเตือนตาม Objective:**
+
+- **GAIN_FRIENDS:** CTR < 0.30% → แนะนำ Refresh Creative | Frequency > 3.5 → เตือน Ad Fatigue | CPF สูงกว่า bid cap > 20% → ตรวจ audience
+- **VIDEO_VIEW:** VTR (Completion) < 15% → แนะนำตัด video ให้สั้นลง
+- **VISIT_MY_WEBSITE:** CTR < 0.20% → แนะนำ Refresh Creative | CPC สูง → ตรวจ bid strategy
+- **REACH:** Frequency > 5.0 → เตือน Fatigue | CPM สูงผิดปกติ > 30% → ตรวจ audience size
+- **CONVERSIONS:** CPA spike > 30% → ตรวจ Landing Page + Creative | ROAS < 1.0 → หยุด/ตรวจ
+
+---
+
 ## Quick Traps Reference
 
 ปัญหาที่เจอบ่อยจาก session จริง — เก็บไว้กันลืม:
