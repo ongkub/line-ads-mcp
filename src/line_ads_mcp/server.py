@@ -12,7 +12,7 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 
 from line_ads_mcp.tools.ads import create_ad, get_ad_status, list_ads, upload_media
-from line_ads_mcp.tools.adsets import create_adset, list_adsets, pause_adset, resume_adset, update_adset
+from line_ads_mcp.tools.adsets import create_adset, get_adset_audience_size, list_adsets, pause_adset, resume_adset, update_adset
 from line_ads_mcp.tools.audiences import create_audience, list_audiences
 from line_ads_mcp.tools.campaigns import (
     create_campaign,
@@ -106,6 +106,11 @@ TOOLS: dict[str, tuple[str, dict[str, Any], ToolFn]] = {
         "ดึงรายการ ad sets/adgroups ใน campaign",
         schema({"campaign_id": {"type": "string"}, "ad_account_id": {"type": "string"}}, ["campaign_id"]),
         list_adsets,
+    ),
+    "get_adset_audience_size": (
+        "เปรียบเทียบขนาด Audience ของ Ad Sets ทุกชุดใน Campaign — แจ้งเตือนถ้า audience ต่างกันเกิน 3x",
+        schema({"campaign_id": {"type": "string"}, "ad_account_id": {"type": "string"}}, ["campaign_id"]),
+        get_adset_audience_size,
     ),
     "create_adset": (
         "สร้าง ad set/adgroup ใหม่ แบบ dry_run เป็นค่าเริ่มต้น",
