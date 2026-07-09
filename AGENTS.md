@@ -172,7 +172,7 @@ Default เป็นกรอกเองถ้า user ไม่แน่ใจ
 7. **update_adset method** — LINE Ads API ใช้ `POST` สำหรับ update adgroup/adset บาง endpoint ไม่ใช่ `PUT`; ถ้าเจอ 404/405 ให้เช็ก client method ก่อนโทษ permission
 8. **Creative rejected** — reason เช่น `POLICY_VIOLATION` ต้องแก้ copy/image ใหม่ ไม่ใช่ resubmit payload เดิม
 9. **Report timezone** — report ต้องระบุหรือสรุป timezone เป็น Asia/Bangkok/+07:00 เสมอ เพื่อกันวันที่คลาดกับ GMT
-10. **Age bracket ห้าม guess (MODE 2)** — LINE Ads รองรับเฉพาะ ageMin: 20, 25, 30, 35, 40, 45, 55, 65 เท่านั้น ห้ามแนะนำหรือส่งค่าอื่น เช่น 28, 22, 42 → API reject ทันที ถ้า user บอกช่วงที่ไม่ตรง ให้แสดง bracket ที่ valid ให้ user เลือกเอง
+10. **Age bracket ห้าม guess (MODE 2)** — ageMin และ ageMax ใช้ชุดค่าต่างกัน เป็น bracket pairs เท่านั้น: 20-24, 25-29, 30-34, 35-39, 40-44, 45-54, 55-65 | valid ageMin: 20,25,30,35,40,45,55 | valid ageMax: 24,29,34,39,44,54,65 — ค่าอื่นนอกนี้ API reject ทันที ถ้า user บอกช่วงที่ไม่ตรง ให้ map ไปหา bracket ที่ครอบคลุมและให้ user confirm
 ## Self-Audit ทุก ~10 turns
 
 ถ้ารู้สึกว่าตอบยาว / screenshot บ่อย / สร้าง task เยอะเกิน ให้ self-correct:

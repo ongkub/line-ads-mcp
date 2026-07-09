@@ -1,6 +1,6 @@
 # workflows/02-campaign.md
 # Campaign + Ad Set + Ad Creation
-# Version 3.2 | May 2026 | MCP-first
+# Version 3.3 | July 2026 | MCP-first + Customer Avatar-first targeting
 
 ---
 
@@ -105,9 +105,25 @@ Hard stop:
 
 | ข้อมูล | คำถาม | Required |
 |---|---|---|
-| กลุ่มเป้าหมาย | เน้นคนกลุ่มไหนครับ? อายุ เพศ อาชีพ ความสนใจ | ใช่ |
+| กลุ่มเป้าหมาย | เน้นคนกลุ่มไหนครับ? (ดู Customer Avatar Gate ก่อนถามข้อนี้) | ใช่ |
 | จำนวน Ad Set | อยากแบ่งกลุ่มเป้าหมายเป็นกี่กลุ่มเพื่อ compare ครับ? | ใช่ |
 | Bid/cost cap | CPF/CPC/CPA สูงสุดกี่บาทครับ? | ถ้าใช้ cost cap |
+
+### Customer Avatar Gate (ก่อนถามหรือเลือก Interest)
+
+**กฎเหล็ก: ห้ามเปิดหน้า Interest แล้วเริ่มติ๊กทันที** — ต้องตอบคำถาม "ลูกค้าคนนี้คือใคร?" ให้ได้ก่อน ไม่งั้นเป็นการ**กอง Interest ที่ดูเกี่ยวข้อง** ไม่ใช่การสร้าง Audience จริง (พบบ่อยในสินค้าราคาสูง เช่น บ้าน 10 ล้าน ที่ใช้งบ 7 หลัก/เดือนแต่หาลูกค้าจริงไม่ได้ เพราะเริ่มคิดจาก Interest ก่อน Customer Avatar)
+
+ถาม user 3 ชั้นตามลำดับ ก่อนไปหน้า Interest:
+
+| ชั้น | คำถาม | ตัวอย่าง (บ้านเดี่ยว 10 ล้าน) |
+|---|---|---|
+| Need | ลูกค้ากำลังมองหาสินค้า/บริการประเภทนี้อยู่ไหม แสดงออกยังไง | มองหาบ้าน/สนใจอสังหาริมทรัพย์ |
+| Ability | ลูกค้ามีกำลังซื้อระดับนี้ไหม มีสัญญาณอะไรบ่งบอก | สนใจการเงิน/การลงทุน |
+| Life Stage | ลูกค้าอยู่ช่วงชีวิตที่ต้องการสินค้านี้ไหม | แต่งงาน/มีครอบครัว/มีลูก |
+
+- ถ้า user ตอบไม่ได้ ให้ช่วย prompt ทีละชั้น อย่าข้ามไปเลือก Interest เอง
+- บันทึกผลเป็น `customer_avatar`: `{ need, ability, life_stage }` ใช้ map ต่อใน Interest Targeting
+- Audience ไม่มีขนาดที่ "ดีที่สุด" มีแต่ขนาดที่เหมาะกับงบ — ห้ามแคบจนเหลือหลักหมื่นด้วยความเชื่อว่ายิ่งแคบยิ่งแม่น (ดู Audience Size Check)
 
 ### 1C — Ad Level (ถามสุดท้าย หลัง Ad Set ชัดแล้ว)
 
@@ -216,21 +232,40 @@ Tool: `create_adset`
 
 ห้ามส่งชื่อ interest ตรง ๆ เช่น `Marketing`, `Branding`, `Business`
 
+**Precondition:** ต้องมี `customer_avatar` (Need/Ability/Life Stage) จาก Customer Avatar Gate ก่อนเริ่ม map — ถ้ายังไม่มีให้ย้อนกลับไปถามก่อน อย่า map จาก "Interest ที่ดูเกี่ยวข้อง" ตรงๆ
+
 ```
 1. อ่าน `knowledge/interest-catalog-INDEX.md` ก่อนเสมอ เพื่อเห็นหมวดหลัก + common mapping โดยไม่โหลด catalog เต็ม
-2. ถ้า INDEX ไม่มี niche/sub-code ที่ต้องการ ให้โหลด detail file เฉพาะหมวดที่เกี่ยวข้อง:
+2. Map ทีละชั้นของ customer_avatar → interest/behavior code แยกกลุ่มตามชั้น (Need / Ability / Life Stage)
+   ดูตัวอย่างเต็มใน `knowledge/interest-catalog-INDEX.md` → "Customer Avatar → Interest Mapping"
+3. ถ้า INDEX ไม่มี niche/sub-code ที่ต้องการ ให้โหลด detail file เฉพาะหมวดที่เกี่ยวข้อง:
    - `knowledge/interest-detail-interests.md`
    - `knowledge/interest-detail-business-commerce.md`
    - `knowledge/interest-detail-lifestyle-consumer.md`
    - `knowledge/interest-detail-line-signals.md`
-3. ถ้า detail file ยังไม่มี segment ที่ต้องการ ค่อยเรียก list_advanced_targeting_codes(campaign_objective="GAIN_FRIENDS", country="TH", locale="th")
-4. เลือกเฉพาะ code ที่ selectable=true
-5. ส่งผ่าน `interest_codes` สำหรับ audience pool แบบกว้าง
-6. ส่งผ่าน `interest_groups` สำหรับ narrow/intersection เช่น [["4"], ["12"]]
+4. ถ้า detail file ยังไม่มี segment ที่ต้องการ ค่อยเรียก list_advanced_targeting_codes(campaign_objective="GAIN_FRIENDS", country="TH", locale="th")
+5. เลือกเฉพาะ code ที่ selectable=true
+6. ใช้ `interest_groups` แบบ intersection ตามชั้น avatar โดย**แต่ละชั้นต้องมีหลาย signal (แนะนำ 3–5 codes) OR กันภายในชั้น** ผสมทั้ง Interest + Behavior เพื่อให้ชั้นสะท้อนกลุ่มจริง ไม่ใช่ code เดียวโดดๆ:
+   interest_groups=[
+       ["6", "1639", ...],        # Need: interest บ้านและสวน OR ผู้ติดตาม OA อสังหาฯ OR ...
+       ["10", "1684", "1590"],    # Ability: การเงิน OR OA การลงทุน OR กำลังซื้อสูง
+       ["1617", "1019", "1618"],  # Life Stage: ครอบครัว OR เลี้ยงดูบุตร OR งานแต่งงาน
+   ]
+   กฎ 2 ข้อที่ผิดบ่อย:
+   - ห้ามโยนทุก interest ที่ "ดูเกี่ยวข้อง" ลง group เดียว (OR รวมหมด เช่น บ้าน+รถยนต์+ครอบครัว+ท่องเที่ยว) — นั่นคือการกอง Interest ไม่ใช่การสร้าง Audience
+   - ห้ามใส่ชั้นละ 1–2 code แล้ว intersect — แคบเกินจริงและชั้นไม่สะท้อนกลุ่ม (Ads Opt ดูก็รู้ว่า target ไม่ครบ) ให้หา signal เสริมจาก detail files จนแต่ละชั้นมีอย่างน้อย 3 codes เว้นแต่หมวดนั้นมี code ให้เลือกน้อยจริง
 7. เมื่อมี `interest_codes` หรือ `interest_groups` tool ต้องใช้:
    targetingMode="MANUAL"
    includeAdvancedTargetings=[{"interests": ["..."]}]
 ```
+
+### Audience Size Check
+
+สูตรอ้างอิงเร็ว: **Audience Size ≈ Budget ÷ CPM × 5,000**
+
+- ก่อนสรุปแผน (Phase 2) ให้ประเมินคร่าวๆ ว่า audience ที่ map จาก avatar ใหญ่พอสำหรับงบที่ user จะใช้ไหม ถ้าดูแคบเกินไปเทียบกับงบ ให้เตือน user ก่อนสร้างจริง — Audience ไม่มีขนาดที่ดีที่สุด มีแต่ขนาดที่เหมาะกับงบ
+- หลังสร้าง adset จริง (หรือหลาย adset สำหรับ compare) ให้เรียก `get_adset_audience_size(campaign_id)` เพื่อตรวจ `targetReachRatio` ของแต่ละ adset
+- ถ้า tool แจ้ง `balance_warning` (ต่างกันเกิน 3x) ให้แจ้ง user และเสนอปรับ targeting ให้ใกล้กันก่อน compare ผล
 
 Live-tested mapping:
 
@@ -275,19 +310,6 @@ LINE Ads รองรับเฉพาะค่าเหล่านี้เ�
 - Map ไปหา bracket ที่ใกล้ที่สุดและ**ครอบคลุม**ช่วงนั้น
 - แสดงตัวเลือก bracket ที่ valid ให้ user เลือก อย่าตัดสินใจแทน
 - ตัวอย่าง: user บอก "28-45" → เสนอ `25-44` (แคบกว่า) หรือ `25-54` (กว้างกว่า) แล้วรอ confirm
-
-### Audience Size Balance (หลายๆ Ad Set)
-
-เมื่อสร้าง Ad Set มากกว่า 1 เพื่อ compare กัน **ขนาด Audience ต้องใกล้เคียงกัน** เพื่อให้ผลเปรียบเทียบยุติธรรม
-
-กฎ:
-- ขนาด Audience ต้องต่างกันไม่เกิน 3× (เช่น 500K vs 1.5M = โอเค / 100K vs 5M = ไม่โอเค)
-- ถ้า Ad Set A มี audience ใหญ่กว่า B มาก ให้แนะนำ:
-  1. เพิ่ม Interest/Behavior filter ให้กับ Ad Set ที่ใหญ่กว่า
-  2. หรือขยาย targeting ของ Ad Set ที่เล็กกว่า
-  3. หรือแบ่ง budget ไม่เท่ากันตามสัดส่วน audience
-- ตรวจหลัง create_adset เสร็จทุก Ad Set: เปรียบเทียบ audience size โดยประมาณจาก targeting scope
-- แจ้ง user ถ้า audience ต่างกันมาก พร้อมเสนอวิธีแก้
 
 ### Step B3 — Upload Media
 
@@ -386,10 +408,12 @@ Sensitive upload เช่น phone/email customer list ให้ default เป
 
 **ห้ามแนะนำ Broad targeting** ไม่ว่ากรณีใด — ไม่มี "Broad adset" ในแผนเลย
 
-Multiple Ad Sets หมายถึงการแบ่ง **Interest/Behavior กลุ่มที่ต่างกัน** เพื่อ compare ว่ากลุ่มไหน perform ดีกว่า เช่น:
-- Adset A: Interest = อาชีพและธุรกิจ + พฤติกรรมผู้จัดการ
-- Adset B: Interest = เทคโนโลยี + พฤติกรรมการซื้อสูง
-- Adset C: Interest = การศึกษา + ผู้ประกอบการ
+Multiple Ad Sets หมายถึงการแบ่ง **Customer Avatar ที่ต่างกัน** (ไม่ใช่สลับ Interest แบบสุ่ม) เพื่อ compare ว่า avatar ไหน perform ดีกว่า เช่น กรณีบ้าน 10 ล้าน:
+- Adset A: avatar "ครอบครัวมีลูก มองหาบ้านหลังแรก" → Need=บ้านและสวน + Ability=การเงิน + Life Stage=ครอบครัว/เลี้ยงดูบุตร
+- Adset B: avatar "นักลงทุนอสังหาฯ" → Need=อสังหาริมทรัพย์ + Ability=การลงทุน/กำลังซื้อสูง + Life Stage=วัยทำงานมั่นคง
+- Adset C: avatar "คู่แต่งงานใหม่กำลังหาบ้าน" → Need=บ้านและสวน + Ability=การเงิน + Life Stage=งานแต่งงาน
+
+แต่ละ adset ต้องตอบคำถาม "ลูกค้ากลุ่มนี้คือใคร" ได้ก่อนสร้าง ไม่ใช่แค่สลับ Interest code ไปมา
 
 สำหรับงบน้อยกว่า ฿500/วัน:
 - ใช้ **1 adset** — เลือก Interest/Behavior กลุ่มที่ match ที่สุด
@@ -472,10 +496,12 @@ Multiple Ad Sets หมายถึงการแบ่ง **Interest/Behavior 
 5. เช็ค duplicate ก่อนสร้าง
 6. ใช้ official codes สำหรับ interest เท่านั้น
 7. ไม่มี delete tools ใช้ pause แทน
+8. ห้ามเลือก Interest ก่อนตอบคำถาม "ลูกค้าคนนี้คือใคร" (Customer Avatar Gate) — กองไม่ใช่ Audience
+9. Audience ไม่มีขนาดที่ดีที่สุด มีแต่ขนาดที่เหมาะกับงบ ใช้ `get_adset_audience_size` เช็คก่อน compare
 
 ---
 
-*Version 3.2 | May 2026*
-*Updated: MCP-first architecture, interest code lookup, media upload/create_ad flow, API write safety, browser fallback scope*
-*v3.1: Goal-first intake, LINE Tag pre-check, min budget table, image spec warning, small image recommendation, debug discipline*
+*Version 3.3 | July 2026*
+*Updated: Customer Avatar Gate (Need/Ability/Life Stage) ก่อนเลือก Interest, Audience Size Check, multiple adsets = multiple avatars*
 *v3.2: Intake order Campaign→AdSet→Ad, ห้าม Broad targeting, multiple adsets = multiple Interest groups for compare*
+*v3.1: Goal-first intake, LINE Tag pre-check, min budget table, image spec warning, small image recommendation, debug discipline*

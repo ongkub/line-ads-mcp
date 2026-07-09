@@ -17,8 +17,11 @@ TARGETING_MODES = {"AUTO", "MANUAL"}
 #   CPF + GAIN_FRIENDS → FRIEND (required, or API returns error)
 AUTO_BID_TYPES = {"FRIEND", "CLICK", "INSTALL", "VIDEO_VIEW", "REACH"}
 
-# Valid LINE Ads age bracket values for TH (confirmed from AGENTS.md / real API)
-VALID_AGES = {20, 25, 30, 35, 40, 45, 55, 65}
+# Valid LINE Ads age bracket values for TH (verified from real API error responses)
+# ageMin และ ageMax ใช้ชุดค่าต่างกัน — เป็น bracket pairs: 20-24, 25-29, 30-34, 35-39, 40-44, 45-54, 55-65
+VALID_AGE_MIN = {20, 25, 30, 35, 40, 45, 55}
+VALID_AGE_MAX = {24, 29, 34, 39, 44, 54, 65}
+VALID_AGES = VALID_AGE_MIN | VALID_AGE_MAX  # union สำหรับ backward compat
 
 
 def _build_advanced_targeting_groups(
@@ -64,17 +67,16 @@ def _build_targeting(
     excluded_audience_ids: list[str] | None = None,
     custom_audience_ids: list[str] | None = None,
 ) -> dict[str, Any]:
-    valid_list = sorted(VALID_AGES)
-    if age_min not in VALID_AGES:
+    if age_min not in VALID_AGE_MIN:
         raise LineAdsAPIError(
             400,
-            f"age_min={age_min} ไม่ถูกต้อง ค่าที่ LINE Ads รองรับ: {valid_list}",
+            f"age_min={age_min} ไม่ถูกต้อง ค่าที่ LINE Ads รองรับ: {sorted(VALID_AGE_MIN)}",
             "VALIDATION_ERROR",
         )
-    if age_max not in VALID_AGES:
+    if age_max not in VALID_AGE_MAX:
         raise LineAdsAPIError(
             400,
-            f"age_max={age_max} ไม่ถูกต้อง ค่าที่ LINE Ads รองรับ: {valid_list}",
+            f"age_max={age_max} ไม่ถูกต้อง ค่าที่ LINE Ads รองรับ: {sorted(VALID_AGE_MAX)}",
             "VALIDATION_ERROR",
         )
     if age_min > age_max:

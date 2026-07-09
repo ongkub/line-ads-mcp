@@ -14,28 +14,34 @@ MCP server สำหรับให้ Claude เรียก LINE Ads API v3 �
 ```
 ช่วย setup LINE Ads MCP Server ให้หน่อยครับ
 
+ก่อนเริ่ม: เช็คก่อนว่าเครื่องฉันเป็น macOS หรือ Windows แล้วใช้คำสั่งให้ถูกฝั่งตลอดทั้งงาน
+
 ขั้นตอนที่ต้องทำ:
 1. Clone repo: https://github.com/ongkub/line-ads-mcp.git
-   - แนะนำ path เช่น ~/line-ads-mcp หรือ ~/Desktop/line-ads-mcp
+   - แนะนำ path เช่น ~/line-ads-mcp (macOS) หรือ C:\Users\<ชื่อ>\line-ads-mcp (Windows)
    - ถ้า folder มีอยู่แล้วให้ git pull แทน
 
-2. ติดตั้ง dependencies:
-   cd <path ที่ clone มา>
-   python3 -m venv .venv
-   source .venv/bin/activate   # Windows: .venv\Scripts\activate
-   pip install -e .
+2. ติดตั้ง dependencies (ไม่ต้อง activate venv — เรียก pip ใน venv ตรงๆ กัน PATH เพี้ยน):
+   - macOS:   python3 -m venv .venv && .venv/bin/pip install -e .
+   - Windows: py -3 -m venv .venv แล้วตามด้วย .venv\Scripts\pip.exe install -e .
+     (ถ้า py ไม่มีให้ลอง python; ถ้าพิมพ์ python แล้วเด้ง Microsoft Store ให้แจ้งฉันว่าต้องติดตั้ง Python จาก python.org ก่อน)
 
-3. สร้างไฟล์ .env จาก .env.example:
-   cp .env.example .env
-   - แล้วถามฉันว่า LINE_ADS_ACCESS_KEY, LINE_ADS_SECRET_KEY, LINE_ADS_AD_ACCOUNT_ID คืออะไร
-   - (หาได้ที่ LINE Ads Manager → Settings → API Management)
-   - เติมค่าเหล่านั้นลงใน .env ให้เลย
+3. สร้างไฟล์ .env:
+   - copy จาก .env.example ถ้ามี (macOS: cp / Windows PowerShell: Copy-Item) ถ้าไม่มีให้สร้างใหม่เลย
+   - ถามฉันทีละตัว: LINE_ADS_ACCESS_KEY, LINE_ADS_SECRET_KEY, LINE_ADS_AD_ACCOUNT_ID
+     (หาได้ที่ LINE Ads Manager → Settings → API Management)
+   - เขียนไฟล์เป็น UTF-8 ธรรมดา (ห้าม UTF-16/BOM — ระวัง PowerShell Out-File)
 
-4. อัปเดต claude_desktop_config.json ให้เพิ่ม MCP server block นี้:
+4. ตรวจว่า server import ได้จริงก่อนแตะ config:
+   - macOS:   .venv/bin/python -c "import line_ads_mcp.server; print('OK')"
+   - Windows: .venv\Scripts\python.exe -c "import line_ads_mcp.server; print('OK')"
+   ถ้าไม่ OK ให้หยุดแก้ตรงนี้ก่อน อย่าเพิ่งไปข้อ 5
+
+5. อัปเดต claude_desktop_config.json — เพิ่ม block นี้ใต้ mcpServers:
    {
      "mcpServers": {
        "line-ads": {
-         "command": "<absolute path ของ .venv/bin/python>",
+         "command": "<absolute path ของ python ใน venv>",
          "args": ["-m", "line_ads_mcp.server"],
          "cwd": "<absolute path ของ repo>",
          "env": {
@@ -46,16 +52,35 @@ MCP server สำหรับให้ Claude เรียก LINE Ads API v3 �
        }
      }
    }
+   ตำแหน่งไฟล์ config:
    - macOS: ~/Library/Application Support/Claude/claude_desktop_config.json
-   - Windows: %APPDATA%\Claude\claude_desktop_config.json
-   - ถ้าไฟล์มี mcpServers อยู่แล้ว ให้เพิ่ม "line-ads" เข้าไป อย่า overwrite ของเดิม
+   - Windows: %APPDATA%\Claude\claude_desktop_config.json (ปกติคือ C:\Users\<ชื่อ>\AppData\Roaming\Claude\)
+   กฎสำคัญ (พลาดแล้ว Claude Desktop จะไม่โหลด MCP เลยโดยไม่แจ้ง error):
+   - "command" บน Windows ต้องชี้ .venv\Scripts\python.exe (ไม่ใช่ .venv/bin/python ซึ่งเป็นของ macOS)
+   - path ใน JSON ให้ใช้ forward slash ทั้งหมดแม้บน Windows เช่น "C:/Users/ong/line-ads-mcp/.venv/Scripts/python.exe" — ห้ามใช้ backslash เดี่ยวเด็ดขาดเพราะทำให้ JSON พัง
+   - ถ้าไฟล์มี mcpServers อยู่แล้ว ให้ merge เพิ่ม "line-ads" เข้าไป อย่า overwrite ของเดิม
+   - บันทึกไฟล์เป็น UTF-8 ไม่มี BOM (บน Windows อย่าใช้ Out-File default ให้ใช้วิธีเขียนที่คุม encoding ได้)
 
-5. แจ้งฉันว่าทำสำเร็จหรือไม่ และให้บอกว่าต้อง Quit แล้วเปิด Claude Desktop ใหม่เพื่อโหลด MCP
+6. ตรวจ config หลังเขียนเสร็จ — ต้อง parse ผ่าน:
+   - macOS:   .venv/bin/python -m json.tool "<path config>"
+   - Windows: .venv\Scripts\python.exe -m json.tool "<path config>"
+   ถ้า parse ไม่ผ่าน = JSON พัง ต้องแก้ก่อนจบงาน (นี่คือสาเหตุอันดับหนึ่งที่ restart แล้วไม่เห็น connector)
+
+7. แจ้งฉันว่าสำเร็จหรือไม่ พร้อมผลตรวจข้อ 4 และข้อ 6 แล้วบอกให้ Quit แล้วเปิด Claude Desktop ใหม่ (ไม่ใช่แค่ปิดหน้าต่าง) เพื่อโหลด MCP
 
 ระหว่างทำ ถ้าขาดข้อมูลไหน ให้ถามฉันทีละอย่างครับ
 ```
 
 > **หมายเหตุ:** หลัง Claude Cowork ทำสำเร็จ ต้อง **Quit แล้วเปิด Claude Desktop ใหม่** (ไม่ใช่แค่ปิดหน้าต่าง) เพื่อให้โหลด MCP server ใหม่
+
+### Restart แล้วไม่เห็น connector `line-ads`? (พบบ่อยบน Windows)
+
+อาการ "ไม่มี connector โผล่เลยสักตัว" เกือบทั้งหมดเกิดจาก **ไฟล์ config เป็น JSON ที่พัง** — Claude Desktop จะเงียบๆ ไม่โหลด MCP ทั้งไฟล์โดยไม่ขึ้น error เช็คตามลำดับ:
+
+1. **JSON parse ผ่านไหม** — รัน `python -m json.tool "%APPDATA%\Claude\claude_desktop_config.json"` (Windows) ถ้า error แปลว่าไฟล์พัง สาเหตุยอดฮิตคือ path แบบ `C:\Users\...` ที่ backslash ไม่ได้ escape → แก้เป็น forward slash `C:/Users/...` ทั้งหมด
+2. **Encoding ของไฟล์** — ถ้าไฟล์ถูกเขียนด้วย PowerShell `Out-File` อาจเป็น UTF-16/มี BOM ซึ่ง parse ไม่ผ่าน ให้เปิดด้วย Notepad แล้ว Save As เป็น UTF-8
+3. **`command` ชี้ถูกไฟล์ไหม** — Windows ต้องเป็น `.venv/Scripts/python.exe` (macOS เท่านั้นที่เป็น `.venv/bin/python`) ลองรัน path นั้นตรงๆ ว่ามีจริง
+4. **แก้ถูกไฟล์ไหม** — ต้องเป็น `claude_desktop_config.json` ใน `%APPDATA%\Claude\` (Roaming) ไม่ใช่ `Local` และไม่ใช่ไฟล์ config อื่น
 
 ### ขั้นตอนสุดท้าย — ใส่ System Prompt
 

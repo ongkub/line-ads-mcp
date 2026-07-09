@@ -119,7 +119,7 @@ TOOLS: dict[str, tuple[str, dict[str, Any], ToolFn]] = {
                 "daily_budget": {"type": "number", "description": "งบต่อวัน หน่วย THB (required)"},
                 "ad_account_id": {"type": "string"},
                 "bid_amount": {"type": "number", "description": "ราคา bid สูงสุด หน่วย THB (required เมื่อ bid_strategy=COST_CAP)"},
-                "age_min": {"type": "integer", "default": 20, "description": "อายุต่ำสุด (ค่าที่ valid: 20, 25, 30, 35, 40, 45, 55, 65 เท่านั้น — ค่าอื่น API reject)"},
+                "age_min": {"type": "integer", "default": 20, "description": "อายุต่ำสุด valid: 20,25,30,35,40,45,55 | age_max valid: 24,29,34,39,44,54,65 — ค่าอื่น API reject"},
                 "age_max": {"type": "integer", "default": 65, "description": "อายุสูงสุด"},
                 "country": {"type": "string", "default": "TH"},
                 "targeting_mode": {"type": "string", "enum": ["AUTO", "MANUAL"], "description": "ถ้ามี interest_codes ให้ใช้ MANUAL; tool จะเลือกให้เองถ้าไม่ระบุ"},

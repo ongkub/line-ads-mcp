@@ -27,6 +27,36 @@
 | `knowledge/interest-detail-lifestyle-consumer.md` | beauty, food, travel, home, sports, entertainment | Lifestyle/consumer behaviors |
 | `knowledge/interest-detail-line-signals.md` | LINE OA follower, OpenChat, LINE TODAY, LINE services | LINE ecosystem behaviors |
 
+## Customer Avatar → Interest Mapping (Need / Ability / Life Stage)
+
+ก่อน map ต้องมี `customer_avatar` จาก `workflows/02-campaign.md` → Customer Avatar Gate ห้าม map ตรงจาก "Interest ที่ดูเกี่ยวข้อง"
+
+หลักคิด: แบ่งเป็น 3 ชั้น แล้ว map แต่ละชั้นเป็น interest_group แยกกัน — **OR ภายในชั้น (แนะนำ 3–5 codes ผสม Interest + Behavior เพื่อให้ชั้นสะท้อนกลุ่มจริง), AND ข้ามชั้น** (`interest_groups=[[...], [...], [...]]`) ไม่ใช่โยนรวมเป็น OR กลุ่มเดียว และไม่ใช่ชั้นละ code เดียวโดดๆ
+
+ตัวอย่าง: บ้านเดี่ยว 10–15 ล้านบาท (อิงเซ็ตตัวอย่างจริงจาก LINE for Business)
+
+| ชั้น | Insight | Codes (OR กันในชั้น) |
+|---|---|---|
+| Need | กำลังหาบ้าน สนใจอสังหาฯ | `6` บ้านและสวน + `1639` ผู้ติดตาม OA อสังหาริมทรัพย์ + `1779` OpenChat ชุมชนผู้พักอาศัย |
+| Ability | มีกำลังซื้อ สนใจการเงินการลงทุน | `10` การเงิน + `1612` การลงทุน + `1590` กำลังซื้อสูง + `1774` OpenChat การเงินและการลงทุน |
+| Life Stage | มีครอบครัว แต่งงาน มีลูก | `1617` ครอบครัว + `1019` การเลี้ยงดูบุตร + `1618` งานแต่งงาน |
+
+Payload ตัวอย่าง:
+
+```python
+interest_groups=[
+    ["6", "1639", "1779"],            # Need
+    ["10", "1612", "1590", "1774"],   # Ability
+    ["1617", "1019", "1618"],         # Life Stage
+]
+```
+
+**คำเตือน 2 ทาง:**
+- อย่าติ๊กทุก interest ที่ "ดูเกี่ยวข้องกับบ้าน" ไว้กลุ่มเดียว (เช่น บ้านและสวน + อสังหา + รถยนต์ + ครอบครัว + ท่องเที่ยว รวมกัน) — นั่นคือการกอง Interest ไม่ใช่การสร้าง Audience
+- อย่าใส่ชั้นละ 1–2 code แล้ว intersect — ชั้นจะบางเกินจนไม่สะท้อนกลุ่มจริง และ audience แคบเกินโดยไม่จำเป็น ให้ไล่หา signal เสริมจาก detail files (Interest + OA follower + OpenChat + LINE TODAY + purchase power) จนครบชั้นละอย่างน้อย 3 codes
+
+**คำเตือนเรื่องขนาด:** อย่าแคบจนเหลือ audience หลักหมื่นด้วยความเชื่อว่ายิ่งแคบยิ่งแม่น — เช็คกับสูตร `Audience Size ≈ Budget ÷ CPM × 5,000` และ `get_adset_audience_size` ก่อนสรุปแผน (ดู Audience Size Check ใน `workflows/02-campaign.md`)
+
 ## Common Business Mapping
 
 | User segment | Recommended payload | Notes |
