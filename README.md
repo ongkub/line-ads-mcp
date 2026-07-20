@@ -37,6 +37,16 @@ MCP server สำหรับให้ Claude เรียก LINE Ads API v3 �
    - Windows: .venv\Scripts\python.exe -c "import line_ads_mcp.server; print('OK')"
    ถ้าไม่ OK ให้หยุดแก้ตรงนี้ก่อน อย่าเพิ่งไปข้อ 5
 
+   ถ้า macOS ขึ้น error "No such file or directory" ตอนรันคำสั่งข้างบน:
+   - venv บน macOS ใช้ symlink ชี้ไป python จริง ถ้าเครื่องเพิ่งอัปเดต/ลบ Python version เดิมออก symlink จะพัง
+   - ตรวจ: file .venv/bin/python
+   - ถ้าขึ้น "broken symbolic link to python3.XX" ให้หา version ที่มีจริงแล้วชี้ใหม่:
+     ls .venv/bin/python3.*
+     ln -sf python3.12 .venv/bin/python   (ใส่เลข version ที่เจอจริงจากคำสั่งก่อนหน้า)
+   - รัน import test ซ้ำอีกครั้งให้ได้ OK ก่อนไปข้อ 5
+
+   Windows ไม่มีปัญหานี้ (venv ใช้ python.exe ตรงๆ ไม่ใช่ symlink) แต่ถ้า import ไม่ผ่าน ให้ตรวจว่ารัน .venv\Scripts\pip.exe install -e . สำเร็จจริงในข้อ 2 ก่อน
+
 5. อัปเดต claude_desktop_config.json — เพิ่ม block นี้ใต้ mcpServers:
    {
      "mcpServers": {
@@ -81,6 +91,27 @@ MCP server สำหรับให้ Claude เรียก LINE Ads API v3 �
 2. **Encoding ของไฟล์** — ถ้าไฟล์ถูกเขียนด้วย PowerShell `Out-File` อาจเป็น UTF-16/มี BOM ซึ่ง parse ไม่ผ่าน ให้เปิดด้วย Notepad แล้ว Save As เป็น UTF-8
 3. **`command` ชี้ถูกไฟล์ไหม** — Windows ต้องเป็น `.venv/Scripts/python.exe` (macOS เท่านั้นที่เป็น `.venv/bin/python`) ลองรัน path นั้นตรงๆ ว่ามีจริง
 4. **แก้ถูกไฟล์ไหม** — ต้องเป็น `claude_desktop_config.json` ใน `%APPDATA%\Claude\` (Roaming) ไม่ใช่ `Local` และไม่ใช่ไฟล์ config อื่น
+
+### เห็น connector `line-ads` แต่ Claude ขึ้น "Could not attach to MCP server" (macOS)
+
+Config JSON ถูกต้อง แต่ python ใน venv รันไม่ได้จริง — สาเหตุหลักคือ **symlink พัง** ครับ
+
+อาการนี้เกิดเมื่อเครื่อง macOS มีการอัปเดต/ลบ Python เวอร์ชันที่ใช้ตอนสร้าง venv ออกไปทีหลัง (เช่น สร้าง venv ตอนมี Python 3.13 แล้วต่อมาเครื่องเหลือแต่ 3.12) เพราะ `.venv/bin/python` บน macOS เป็นแค่ symlink ชี้ไป python จริง ไม่ใช่ไฟล์จริง
+
+ตรวจสอบ:
+```bash
+file ~/line-ads-mcp/.venv/bin/python
+```
+ถ้าขึ้น `broken symbolic link to python3.XX` ให้แก้:
+```bash
+ls ~/line-ads-mcp/.venv/bin/python3.*
+# ดูว่ามี python3.12 หรือ python3.11 อะไรจริงบ้าง แล้วชี้ symlink ใหม่ไปตัวนั้น
+ln -sf python3.12 ~/line-ads-mcp/.venv/bin/python
+~/line-ads-mcp/.venv/bin/python -c "import line_ads_mcp.server; print('OK')"
+```
+ได้ `OK` แล้วค่อย Quit + เปิด Claude Desktop ใหม่
+
+Windows ไม่เจอปัญหานี้เพราะ `.venv\Scripts\python.exe` เป็นไฟล์จริง ไม่ใช่ symlink — ถ้า Windows ขึ้น attach error ให้ตรวจว่า path ใน config ตรงกับที่มีไฟล์จริงแทน (`.venv\Scripts\python.exe` ไม่ใช่ `.venv\bin\python`)
 
 ### ขั้นตอนสุดท้าย — ใส่ System Prompt
 
