@@ -12,12 +12,32 @@
 
 | Objective | CTR ดี | Cost ปกติ | Metric หลัก |
 |---|---:|---:|---|
-| GAIN_FRIENDS | > 1.5% | CPF ฿8-20/friend | Friends, CPF |
+| GAIN_FRIENDS | 0.08–0.19% | CPF ฿8-20/friend | Clicks (=Friends), CPF |
 | WEBSITE_TRAFFIC | > 0.8% | CPC ฿2-6/click | Clicks, CPC, CTR |
 | CONVERSIONS | > 0.8% | CPA ขึ้นกับ margin | Conversions, CPA, CVR |
 | REACH | > 0.5% | CPM ฿20-80 | Reach, CPM, Frequency |
 | APP_INSTALL | > 0.8% | CPI ขึ้นกับ app category | Installs, CPI |
 | VIDEO_VIEW | > 3.0% video engagement | CPV ฿0.5-2/view | Views, CPV, completion |
+
+## ⚠️ GAIN_FRIENDS — วิธีนับ Friends (สำคัญมาก)
+
+**Friends นับจาก Click ไม่ใช่ Pixel/cv**
+
+LINE Ads GAIN_FRIENDS objective ชี้ ad ไปหน้า Add Friend ของ LINE OA โดยตรง
+ดังนั้น **Click = Friend Add** — ไม่มี pixel event แยก และ `cv` field จะเป็น 0 เสมอ นี่คือ **พฤติกรรมปกติ ไม่ใช่ bug**
+
+| Metric | ความหมาย |
+|---|---|
+| `click` | จำนวน Friend ที่ add แล้ว (primary metric) |
+| `cv` | **ไม่ใช้** สำหรับ GAIN_FRIENDS — จะเป็น 0 เสมอ อย่า flag ว่าผิดปกติ |
+| CPF จริง | `cost / click` ไม่ใช่ `cost / cv` |
+
+**กฎการวิเคราะห์ GAIN_FRIENDS:**
+- `cv = 0` → ปกติ ❌ อย่า flag เป็น pixel/tracking issue
+- `click = 0` + Impressions > 1,000 → ค่อย diagnose bid/creative/targeting
+- CPF = `spend / click`
+- เทียบ CPF กับ benchmark ฿8-20/friend (ตาม industry)
+
 
 ## Industry Tier Adjustments
 

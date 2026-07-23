@@ -147,7 +147,9 @@ Patterns:
 
 ```
 GAIN_FRIENDS:
-- Friends = 0 + Impressions > 1,000 → bid cap ต่ำ / creative / targeting
+- ⚠️ cv = 0 → ปกติสำหรับ GAIN_FRIENDS เสมอ อย่า flag เป็น pixel/tracking issue
+  Friends นับจาก click ไม่ใช่ pixel event — ดู metric จาก `click` และ CPF = spend/click
+- click = 0 + Impressions > 1,000 → bid cap ต่ำ / creative / targeting (ใช้ click ไม่ใช่ cv)
 - Impressions = 0 → paused, review, bid ต่ำ, targeting แคบ
 - CPF สูงใกล้ cap → อาจต้องปรับ bid หรือ creative แต่ห้ามเลือกเลขเอง
 
