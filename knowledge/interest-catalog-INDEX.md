@@ -8,22 +8,25 @@
 
 - Verified for `campaignObjective=GAIN_FRIENDS`, `country=TH`, `locale=th`
 - Source: LINE Ads API `/codes/advanced-targeting`
-- Last verified: 2026-05-13
-- Full selectable cache split into detail files: 54 interests, 201 behaviors, 12 purchase intents
+- Last verified: 2026-09-27 (codes เท่าเดิม, audience size อัปเดตแล้ว)
+- Full selectable cache split into detail files: 54 interests, 201 behaviors (รวม 45 app behaviors), 12 purchase intents
 
 ## How To Load
 
 1. อ่านไฟล์นี้ก่อนเสมอเพื่อแนะนำหมวด/strategy ให้ user
 2. ถ้า code ใน common mapping หรือ top-level table พอ ให้ใช้ได้เลย
 3. ถ้า user ขอ niche/sub-code ให้โหลด detail file เฉพาะหมวดที่เกี่ยวข้อง
-4. เรียก `list_advanced_targeting_codes` เฉพาะเมื่อ cache ไม่มี, objective/country/locale เปลี่ยน, API reject code, หรือต้องการ audience size ล่าสุด
+4. ถ้าต้องการเช็คว่า code ที่เห็นใน Ads Manager มีไหม / ค้นด้วยชื่อ → grep `knowledge/targeting-codes-full.md` (ครบทุก code พร้อม path ตาม UI; ไฟล์ใหญ่ ~43KB อย่าโหลดทั้งไฟล์)
+5. เรียก `list_advanced_targeting_codes` เฉพาะเมื่อ cache ไม่มี, objective/country/locale เปลี่ยน, API reject code, หรือต้องการ audience size ล่าสุด
 
 ## Detail Files
 
 | Detail file | ใช้เมื่อ | Content |
 |---|---|---|
 | `knowledge/interest-detail-interests.md` | ต้องการ sub-interest หรือ purchase intent | Interests 54 + purchase intents 12 |
-| `knowledge/interest-detail-business-commerce.md` | B2B, finance, ecommerce, device/app, affluence | Business/commerce behaviors |
+| `knowledge/interest-detail-business-commerce.md` | B2B, finance, ecommerce, กำลังซื้อ | Business/commerce behaviors |
+| `knowledge/interest-detail-app-behavior.md` | หมวดหมู่แอป, เกม, persona จากแอป, ระดับความมั่งคั่ง, ราคา/อายุมือถือ | Mobile app behaviors (45) + วิธี map เข้า Avatar |
+| `knowledge/targeting-codes-full.md` | เช็คความครบ / ค้นหา code ด้วยชื่อ (auto-generated) | ครบ 267 codes + path ตาม Ads Manager — refresh ด้วย `uv run python scripts/sync_targeting_codes.py` |
 | `knowledge/interest-detail-lifestyle-consumer.md` | beauty, food, travel, home, sports, entertainment | Lifestyle/consumer behaviors |
 | `knowledge/interest-detail-line-signals.md` | LINE OA follower, OpenChat, LINE TODAY, LINE services | LINE ecosystem behaviors |
 
@@ -51,6 +54,19 @@ interest_groups=[
 ]
 ```
 
+### เติมชั้นด้วยหมวดหมู่แอป (App Behavior)
+
+App behavior = แอปที่คนใช้จริงบนมือถือ เป็น signal ที่แรงกว่า interest ทั่วไป ใช้เติมแต่ละชั้นให้หนาขึ้น (OR ในชั้นเดิม) ไม่ต้องเพิ่มเป็นชั้นใหม่:
+
+| ชั้น | App codes ที่ใช้บ่อย |
+|---|---|
+| Need | `2479` แอปท่องเที่ยว, `2435` ชอบเดินทาง, `2469` แอปการศึกษา, `2474` แอปทำงาน, `2466` แอปกราฟิก, `2437` ผู้หญิงใส่ใจความงาม, `2438` ผู้ชายใส่ใจแฟชั่น, `2440` ใส่ใจสิ่งแวดล้อม |
+| Ability | `2443`–`2445` ความมั่งคั่งกลาง/สูง/สูงมาก, `2449`–`2450` มือถือราคา 30k+ |
+| Life Stage | `2436` แม่และเด็ก, `2439` วัยเกษียณ, `2441` สนใจซื้อรถคันแรก |
+
+ห้ามใช้ `2468` การติดต่อสื่อสาร, `2470` ความบันเทิง, `2476` ตัดต่อภาพ/วิดีโอ, `2477` โซเชียล, `2478` เครื่องมือ เป็น code หลักของชั้น — กว้างเกิน (5–12M) ไม่ได้คัดใคร
+ตัวอย่างเต็ม + ตาราง code ทั้งหมด → `knowledge/interest-detail-app-behavior.md`
+
 **คำเตือน 2 ทาง:**
 - อย่าติ๊กทุก interest ที่ "ดูเกี่ยวข้องกับบ้าน" ไว้กลุ่มเดียว (เช่น บ้านและสวน + อสังหา + รถยนต์ + ครอบครัว + ท่องเที่ยว รวมกัน) — นั่นคือการกอง Interest ไม่ใช่การสร้าง Audience
 - อย่าใส่ชั้นละ 1–2 code แล้ว intersect — ชั้นจะบางเกินจนไม่สะท้อนกลุ่มจริง และ audience แคบเกินโดยไม่จำเป็น ให้ไล่หา signal เสริมจาก detail files (Interest + OA follower + OpenChat + LINE TODAY + purchase power) จนครบชั้นละอย่างน้อย 3 codes
@@ -67,7 +83,7 @@ interest_groups=[
 | คลินิกเสริมความงาม | `interest_groups=[["4"], ["1604"]]` | ธุรกิจ + ความงาม |
 | ร้านเสื้อผ้าออนไลน์ | `interest_groups=[["4"], ["31"], ["1605"]]` | ธุรกิจ + ช้อปปิ้ง + แฟชั่น |
 | ร้านอาหาร / F&B owner | `interest_groups=[["4"], ["1607"]]` | ธุรกิจ + อาหาร |
-| กำลังซื้อสูง | `behavior_codes=["1590"]` | ใช้เป็น behavior เสริม ไม่ใช่ interest |
+| กำลังซื้อสูง | ใส่ `1590`, `2444`, `2445` ในชั้น Ability ของ `interest_groups` | behavior code ใส่ปนใน `interest_groups` ได้ tool แยก key ให้เอง |
 
 ## Top-Level Interests
 
@@ -117,8 +133,8 @@ LINE เกม, LINE ดูดวง, LINE เมโลดี้, LINE ธีม
 → โหลด `interest-detail-business-commerce.md`
 
 ### 6. พฤติกรรมการใช้งานแอปบนมือถือ (Mobile App Behavior)
-ผู้ใช้ iOS / Android, กลุ่มเกม, กลุ่มการเงิน ฯลฯ
-→ โหลด `interest-detail-business-commerce.md`
+Persona จากแอป (ชอบเดินทาง / แม่และเด็ก / ใส่ใจความงาม / ผู้ชายใส่ใจแฟชั่น / วัยเกษียณ / ใส่ใจสิ่งแวดล้อม / รถคันแรก), ระดับความมั่งคั่ง 4 ระดับ, **หมวดหมู่แอป 14 หมวด + เกม 11 ประเภท**, ผู้ใช้อุปกรณ์มือถือ (ระดับราคา / อายุเครื่อง)
+→ โหลด `interest-detail-app-behavior.md`
 
 ---
 
@@ -138,5 +154,7 @@ interest_groups=[["4"], ["12"]]
   { "interests": ["12"] }
 ]
 ```
+
+ถ้าชั้นเดียวมีทั้ง interest + behavior (เช่น app category) tool จะแยก key ให้อัตโนมัติ — `[["18", "2479"]]` → `{ "interests": ["18"], "behaviors": ["2479"] }` (purchase intent → `purchaseIntents`)
 
 หลีกเลี่ยง `interest_codes=["4", "12"]` เมื่อ user ต้องการ audience แคบ เพราะ LINE มีแนวโน้มตีความเป็น audience pool แบบรวม

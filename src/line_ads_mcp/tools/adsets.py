@@ -17,11 +17,43 @@ TARGETING_MODES = {"AUTO", "MANUAL"}
 #   CPF + GAIN_FRIENDS → FRIEND (required, or API returns error)
 AUTO_BID_TYPES = {"FRIEND", "CLICK", "INSTALL", "VIDEO_VIEW", "REACH"}
 
-# Valid LINE Ads age bracket values for TH (verified from real API error responses)
-# ageMin และ ageMax ใช้ชุดค่าต่างกัน — เป็น bracket pairs: 20-24, 25-29, 30-34, 35-39, 40-44, 45-54, 55-65
-VALID_AGE_MIN = {20, 25, 30, 35, 40, 45, 55}
-VALID_AGE_MAX = {24, 29, 34, 39, 44, 54, 65}
-VALID_AGES = VALID_AGE_MIN | VALID_AGE_MAX  # union สำหรับ backward compat
+# Age dropdowns in Ads Manager (TH, verified from UI 2026-09-27):
+#   ageMin: 20, 25, ..., 65 (ขั้นละ 5)
+#   ageMax: 24, 29, ..., 64 (ขั้นละ 5) หรือ "ไม่ตั้งค่า" = ไม่ส่ง ageMax
+# API rejects ageMax=65 (REQUEST_INPUT_AGE_MIN_MAX_REVERSED).
+VALID_AGE_MIN = set(range(20, 66, 5))
+VALID_AGE_MAX = set(range(24, 65, 5))
+# Legacy callers passed 65 meaning "no upper limit"; keep accepting it and send no ageMax.
+LEGACY_NO_AGE_MAX = 65
+
+
+# Selectable codes by type (verified from /codes/advanced-targeting, TH/th, 2026-09-27).
+# Every other code is a BEHAVIOR (OA followers, OpenChat, LINE TODAY, app categories, ...).
+INTEREST_CODES = {
+    "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "15", "16", "17", "18", "30", "31",
+    "1016", "1017", "1018", "1019", "1603", "1604", "1605", "1606", "1607", "1608", "1609", "1610",
+    "1611", "1612", "1613", "1614", "1615", "1616", "1617", "1618", "1619", "1620", "1621", "1622",
+    "1623", "1624", "1625", "1626", "1627", "1628", "1629", "1630", "1631", "1632", "1634", "1635",
+}
+PURCHASE_INTENT_CODES = {
+    "1021", "1022", "1023", "1024", "1025", "1594", "1595", "1596", "1597", "1598", "1599", "1600",
+}
+
+
+def _split_codes_by_type(codes: list[str]) -> dict[str, list[str]]:
+    """Split one targeting layer into the keys LINE expects (interests/behaviors/purchaseIntents)."""
+    split: dict[str, list[str]] = {}
+    for code in codes:
+        if not code:
+            continue
+        if code in INTEREST_CODES:
+            key = "interests"
+        elif code in PURCHASE_INTENT_CODES:
+            key = "purchaseIntents"
+        else:
+            key = "behaviors"
+        split.setdefault(key, []).append(code)
+    return split
 
 
 def _build_advanced_targeting_groups(
@@ -33,15 +65,17 @@ def _build_advanced_targeting_groups(
     """Build LINE includeAdvancedTargetings groups.
 
     LINE treats each object in includeAdvancedTargetings as a separate condition.
-    Use interest_groups for narrow/intersection-like targeting, for example
-    [["4"], ["12"]] -> [{"interests": ["4"]}, {"interests": ["12"]}].
+    Use interest_groups for narrow/intersection-like targeting: each inner list is
+    one layer and may mix interest, behavior (e.g. app categories) and purchase
+    intent codes, for example
+    [["4"], ["12", "2441"]] -> [{"interests": ["4"]}, {"interests": ["12"], "behaviors": ["2441"]}].
     """
     groups: list[dict[str, list[str]]] = []
 
     for group in interest_groups or []:
-        cleaned_group = [code for code in group if code]
-        if cleaned_group:
-            groups.append({"interests": cleaned_group})
+        split_group = _split_codes_by_type(group)
+        if split_group:
+            groups.append(split_group)
 
     broad_group: dict[str, list[str]] = {}
     if interest_codes:
@@ -57,7 +91,7 @@ def _build_advanced_targeting_groups(
 def _build_targeting(
     *,
     age_min: int,
-    age_max: int,
+    age_max: int | None,
     country: str,
     targeting_mode: str | None = None,
     genders: list[str] | None = None,
@@ -73,13 +107,15 @@ def _build_targeting(
             f"age_min={age_min} ไม่ถูกต้อง ค่าที่ LINE Ads รองรับ: {sorted(VALID_AGE_MIN)}",
             "VALIDATION_ERROR",
         )
-    if age_max not in VALID_AGE_MAX:
+    if age_max == LEGACY_NO_AGE_MAX:
+        age_max = None
+    if age_max is not None and age_max not in VALID_AGE_MAX:
         raise LineAdsAPIError(
             400,
-            f"age_max={age_max} ไม่ถูกต้อง ค่าที่ LINE Ads รองรับ: {sorted(VALID_AGE_MAX)}",
+            f"age_max={age_max} ไม่ถูกต้อง ค่าที่ LINE Ads รองรับ: {sorted(VALID_AGE_MAX)} หรือไม่ระบุ (= ไม่ตั้งค่า)",
             "VALIDATION_ERROR",
         )
-    if age_min > age_max:
+    if age_max is not None and age_min > age_max:
         raise LineAdsAPIError(400, f"age_min ({age_min}) ต้องน้อยกว่าหรือเท่ากับ age_max ({age_max})", "VALIDATION_ERROR")
 
     has_manual_targeting = bool(genders or interest_codes or interest_groups or behavior_codes or custom_audience_ids)
@@ -128,7 +164,7 @@ async def create_adset(
     ad_account_id: str | None = None,
     bid_amount: float | None = None,
     age_min: int = 20,
-    age_max: int = 65,
+    age_max: int | None = None,
     country: str = "TH",
     targeting_mode: str | None = None,
     genders: list[str] | None = None,
@@ -235,7 +271,7 @@ async def update_adset(
         ):
             targeting = _build_targeting(
                 age_min=age_min if age_min is not None else 20,
-                age_max=age_max if age_max is not None else 65,
+                age_max=age_max,
                 country=country,
                 targeting_mode=targeting_mode,
                 genders=genders,

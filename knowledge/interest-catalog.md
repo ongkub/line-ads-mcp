@@ -12,6 +12,7 @@
    - `knowledge/interest-detail-business-commerce.md`
    - `knowledge/interest-detail-lifestyle-consumer.md`
    - `knowledge/interest-detail-line-signals.md`
+   - `knowledge/interest-detail-app-behavior.md`
 4. เรียก `list_advanced_targeting_codes` เฉพาะเมื่อ detail files ไม่มี, objective/country/locale เปลี่ยน, API reject code, หรือต้องการ audience size ล่าสุด
 
 ## Why

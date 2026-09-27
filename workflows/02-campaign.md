@@ -1,6 +1,6 @@
 # workflows/02-campaign.md
 # Campaign + Ad Set + Ad Creation
-# Version 3.3 | July 2026 | MCP-first + Customer Avatar-first targeting
+# Version 3.4 | September 2026 | MCP-first + Customer Avatar-first targeting + App Behavior
 
 ---
 
@@ -115,11 +115,13 @@ Hard stop:
 
 ถาม user 3 ชั้นตามลำดับ ก่อนไปหน้า Interest:
 
-| ชั้น | คำถาม | ตัวอย่าง (บ้านเดี่ยว 10 ล้าน) |
-|---|---|---|
-| Need | ลูกค้ากำลังมองหาสินค้า/บริการประเภทนี้อยู่ไหม แสดงออกยังไง | มองหาบ้าน/สนใจอสังหาริมทรัพย์ |
-| Ability | ลูกค้ามีกำลังซื้อระดับนี้ไหม มีสัญญาณอะไรบ่งบอก | สนใจการเงิน/การลงทุน |
-| Life Stage | ลูกค้าอยู่ช่วงชีวิตที่ต้องการสินค้านี้ไหม | แต่งงาน/มีครอบครัว/มีลูก |
+| ชั้น | คำถาม | ตัวอย่าง (บ้านเดี่ยว 10 ล้าน) | สัญญาณจากแอปในมือถือ (App Behavior) |
+|---|---|---|---|
+| Need | ลูกค้ากำลังมองหาสินค้า/บริการประเภทนี้อยู่ไหม แสดงออกยังไง | มองหาบ้าน/สนใจอสังหาริมทรัพย์ | ใช้แอปหมวดไหนที่ตรงกับปัญหา เช่น แอปท่องเที่ยว / การศึกษา / แอปทำงาน |
+| Ability | ลูกค้ามีกำลังซื้อระดับนี้ไหม มีสัญญาณอะไรบ่งบอก | สนใจการเงิน/การลงทุน | ระดับความมั่งคั่ง + ราคามือถือที่ใช้ |
+| Life Stage | ลูกค้าอยู่ช่วงชีวิตที่ต้องการสินค้านี้ไหม | แต่งงาน/มีครอบครัว/มีลูก | persona จากแอป: แม่และเด็ก / วัยเกษียณ / ซื้อรถคันแรก |
+
+ทุกชั้นต้องถามต่อ 1 ข้อ: **"ลูกค้ากลุ่มนี้น่าจะใช้แอปแบบไหนในมือถือ?"** แล้ว map เป็น app code จาก `knowledge/interest-detail-app-behavior.md` ใส่ในชั้นนั้น (OR ร่วมกับ interest เดิม)
 
 - ถ้า user ตอบไม่ได้ ให้ช่วย prompt ทีละชั้น อย่าข้ามไปเลือก Interest เอง
 - บันทึกผลเป็น `customer_avatar`: `{ need, ability, life_stage }` ใช้ map ต่อใน Interest Targeting
@@ -238,17 +240,19 @@ Tool: `create_adset`
 1. อ่าน `knowledge/interest-catalog-INDEX.md` ก่อนเสมอ เพื่อเห็นหมวดหลัก + common mapping โดยไม่โหลด catalog เต็ม
 2. Map ทีละชั้นของ customer_avatar → interest/behavior code แยกกลุ่มตามชั้น (Need / Ability / Life Stage)
    ดูตัวอย่างเต็มใน `knowledge/interest-catalog-INDEX.md` → "Customer Avatar → Interest Mapping"
+   **ทุกชั้นต้องเช็ค App Behavior ก่อนสรุป** (หมวดหมู่แอป / persona จากแอป / ความมั่งคั่ง / ราคามือถือ) — ถ้าชั้นไหนไม่ใส่ app code ต้องบอก user ว่าเพราะอะไร เช่น ไม่มีหมวดที่ตรง หรือหมวดที่ตรงกว้างเกิน (โซเชียล / การติดต่อสื่อสาร / ตัดต่อภาพ)
 3. ถ้า INDEX ไม่มี niche/sub-code ที่ต้องการ ให้โหลด detail file เฉพาะหมวดที่เกี่ยวข้อง:
    - `knowledge/interest-detail-interests.md`
    - `knowledge/interest-detail-business-commerce.md`
    - `knowledge/interest-detail-lifestyle-consumer.md`
    - `knowledge/interest-detail-line-signals.md`
+   - `knowledge/interest-detail-app-behavior.md` — หมวดหมู่แอป / persona จากแอป / ระดับความมั่งคั่ง / ราคามือถือ (ใช้เติมทุกชั้น Need/Ability/Life Stage)
 4. ถ้า detail file ยังไม่มี segment ที่ต้องการ ค่อยเรียก list_advanced_targeting_codes(campaign_objective="GAIN_FRIENDS", country="TH", locale="th")
 5. เลือกเฉพาะ code ที่ selectable=true
 6. ใช้ `interest_groups` แบบ intersection ตามชั้น avatar โดย**แต่ละชั้นต้องมีหลาย signal (แนะนำ 3–5 codes) OR กันภายในชั้น** ผสมทั้ง Interest + Behavior เพื่อให้ชั้นสะท้อนกลุ่มจริง ไม่ใช่ code เดียวโดดๆ:
    interest_groups=[
        ["6", "1639", ...],        # Need: interest บ้านและสวน OR ผู้ติดตาม OA อสังหาฯ OR ...
-       ["10", "1684", "1590"],    # Ability: การเงิน OR OA การลงทุน OR กำลังซื้อสูง
+       ["10", "1590", "2444", "2445"],  # Ability: การเงิน OR กำลังซื้อสูง OR ความมั่งคั่งสูง/สูงมาก (app)
        ["1617", "1019", "1618"],  # Life Stage: ครอบครัว OR เลี้ยงดูบุตร OR งานแต่งงาน
    ]
    กฎ 2 ข้อที่ผิดบ่อย:
@@ -256,7 +260,8 @@ Tool: `create_adset`
    - ห้ามใส่ชั้นละ 1–2 code แล้ว intersect — แคบเกินจริงและชั้นไม่สะท้อนกลุ่ม (Ads Opt ดูก็รู้ว่า target ไม่ครบ) ให้หา signal เสริมจาก detail files จนแต่ละชั้นมีอย่างน้อย 3 codes เว้นแต่หมวดนั้นมี code ให้เลือกน้อยจริง
 7. เมื่อมี `interest_codes` หรือ `interest_groups` tool ต้องใช้:
    targetingMode="MANUAL"
-   includeAdvancedTargetings=[{"interests": ["..."]}]
+   includeAdvancedTargetings=[{"interests": [...], "behaviors": [...], "purchaseIntents": [...]}, ...]
+   ใส่ interest/behavior/purchase intent code ปนกันใน `interest_groups` ชั้นเดียวกันได้ — tool แยก key ตามประเภท code ให้เอง (behavior รวมถึงหมวดหมู่แอปทั้งหมด ห้ามอยู่ใต้ `interests`)
 ```
 
 ### Audience Size Check
@@ -292,23 +297,21 @@ Live-tested mapping:
 
 ### Age Brackets
 
-LINE Ads รองรับเฉพาะค่าเหล่านี้เท่านั้น — ค่าอื่นนอกจากนี้ API reject ทันที:
+ตรงกับ dropdown ใน Ads Manager (อายุเริ่ม กับ อายุสิ้นสุด ใช้ชุดค่าคนละชุด) — ค่าอื่น API reject ทันที:
 
-| valid ageMin | valid ageMax |
+| age_min (อายุเริ่ม) | age_max (อายุสิ้นสุด) |
 |---|---|
-| 20 | 24 |
-| 25 | 29 |
-| 30 | 34 |
-| 35 | 39 |
-| 40 | 44 |
-| 45 | 54 |
-| 55 | 65 |
+| 20, 25, 30, 35, 40, 45, 50, 55, 60, 65 | 24, 29, 34, 39, 44, 49, 54, 59, 64 หรือ **ไม่ระบุ** (= ไม่ตั้งค่า ไม่จำกัดอายุสูงสุด) |
 
-**กฎเหล็ก:** ห้ามแนะนำค่าที่ไม่อยู่ในตารางนี้ เช่น 28, 22, 42 — จะทำให้ API error เสมอ
+- เลือกคู่ไหนก็ได้ที่ age_min < age_max เช่น 25–34, 30–49, 20–64
+- "X ปีขึ้นไป" → ใส่แค่ `age_min=X` ไม่ใส่ `age_max`
+- ห้ามส่ง `age_max=65` (ไม่มีใน dropdown และ API reject — tool จะแปลงเป็น "ไม่ตั้งค่า" ให้เพื่อกันพัง)
+
+**กฎเหล็ก:** ห้ามแนะนำค่าที่ไม่อยู่ในตารางนี้ เช่น 28, 22, 42, age_max=65 — จะทำให้ API error เสมอ
 
 ถ้า user บอกช่วงอายุที่ไม่ตรง bracket:
-- Map ไปหา bracket ที่ใกล้ที่สุดและ**ครอบคลุม**ช่วงนั้น
-- แสดงตัวเลือก bracket ที่ valid ให้ user เลือก อย่าตัดสินใจแทน
+- Map ไปหาค่าที่ใกล้ที่สุดและ**ครอบคลุม**ช่วงนั้น เช่น 18–60 → 20–64, 22–28 → 20–29
+- แสดงตัวเลือกที่ valid ให้ user เลือก อย่าตัดสินใจแทน
 - ตัวอย่าง: user บอก "28-45" → เสนอ `25-44` (แคบกว่า) หรือ `25-54` (กว้างกว่า) แล้วรอ confirm
 
 ### Step B3 — Upload Media
@@ -501,7 +504,8 @@ Multiple Ad Sets หมายถึงการแบ่ง **Customer Avatar �
 
 ---
 
-*Version 3.3 | July 2026*
-*Updated: Customer Avatar Gate (Need/Ability/Life Stage) ก่อนเลือก Interest, Audience Size Check, multiple adsets = multiple avatars*
+*Version 3.4 | September 2026*
+*Updated: หมวดหมู่แอป/App Behavior (`interest-detail-app-behavior.md`) ใช้เติมชั้น Need/Ability/Life Stage; `interest_groups` แยก interests/behaviors/purchaseIntents อัตโนมัติ; อายุตรงกับ dropdown UI (min 20–65, max 24–64 หรือไม่ตั้งค่า)*
+*v3.3: Customer Avatar Gate (Need/Ability/Life Stage) ก่อนเลือก Interest, Audience Size Check, multiple adsets = multiple avatars*
 *v3.2: Intake order Campaign→AdSet→Ad, ห้าม Broad targeting, multiple adsets = multiple Interest groups for compare*
 *v3.1: Goal-first intake, LINE Tag pre-check, min budget table, image spec warning, small image recommendation, debug discipline*

@@ -170,6 +170,32 @@ async def test_create_adset_can_combine_narrow_interests_and_behaviors():
 
 
 @pytest.mark.asyncio
+async def test_create_adset_interest_groups_split_codes_by_type():
+    """Avatar layers mix interest + behavior (app category) + purchase intent codes."""
+    result = await create_adset(
+        campaign_id="9652193645389",
+        name="Avatar Layers",
+        bid_type="CPF",
+        bid_strategy="COST_CAP",
+        auto_bid_type="FRIEND",
+        daily_budget=111,
+        bid_amount=25,
+        interest_groups=[
+            ["18", "2479", "2435", "1783"],
+            ["2444", "2445", "1590"],
+            ["9", "1594"],
+        ],
+    )
+
+    targeting = result["payload"]["targeting"]
+    assert targeting["includeAdvancedTargetings"] == [
+        {"interests": ["18"], "behaviors": ["2479", "2435", "1783"]},
+        {"behaviors": ["2444", "2445", "1590"]},
+        {"interests": ["9"], "purchaseIntents": ["1594"]},
+    ]
+
+
+@pytest.mark.asyncio
 async def test_create_adset_excluded_audience_ids_in_targeting():
     """GAIN_FRIENDS campaigns require excludedCustomAudienceIds."""
     result = await create_adset(
@@ -271,3 +297,75 @@ async def test_resume_adset_dry_run_by_default():
 
     assert result["dry_run"] is True
     assert result["payload"]["configuredStatus"] == "ACTIVE"
+
+
+@pytest.mark.asyncio
+async def test_create_adset_default_age_has_no_upper_limit():
+    """Ads Manager 'ไม่ตั้งค่า' = ageMin only; API rejects ageMax=65."""
+    result = await create_adset(
+        campaign_id="9652193645389",
+        name="All Ages",
+        bid_type="CPF",
+        bid_strategy="LOWEST_COST",
+        auto_bid_type="FRIEND",
+        daily_budget=111,
+    )
+
+    targeting = result["payload"]["targeting"]
+    assert targeting["ageMin"] == 20
+    assert "ageMax" not in targeting
+
+
+@pytest.mark.asyncio
+async def test_create_adset_legacy_age_max_65_is_not_sent():
+    result = await create_adset(
+        campaign_id="9652193645389",
+        name="Legacy 65",
+        bid_type="CPF",
+        bid_strategy="LOWEST_COST",
+        auto_bid_type="FRIEND",
+        daily_budget=111,
+        age_min=55,
+        age_max=65,
+    )
+
+    targeting = result["payload"]["targeting"]
+    assert targeting["ageMin"] == 55
+    assert "ageMax" not in targeting
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("age_min,age_max", [(50, 59), (60, 64), (65, None), (20, 49), (45, 54)])
+async def test_create_adset_accepts_all_ui_age_values(age_min, age_max):
+    result = await create_adset(
+        campaign_id="9652193645389",
+        name="UI Ages",
+        bid_type="CPF",
+        bid_strategy="LOWEST_COST",
+        auto_bid_type="FRIEND",
+        daily_budget=111,
+        age_min=age_min,
+        age_max=age_max,
+    )
+
+    assert result["ok"] is True
+    targeting = result["payload"]["targeting"]
+    assert targeting["ageMin"] == age_min
+    assert targeting.get("ageMax") == age_max
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("age_min,age_max", [(22, 29), (20, 28), (18, 24), (70, None), (30, 29)])
+async def test_create_adset_rejects_ages_not_in_ui(age_min, age_max):
+    result = await create_adset(
+        campaign_id="9652193645389",
+        name="Bad Ages",
+        bid_type="CPF",
+        bid_strategy="LOWEST_COST",
+        auto_bid_type="FRIEND",
+        daily_budget=111,
+        age_min=age_min,
+        age_max=age_max,
+    )
+
+    assert result["ok"] is False

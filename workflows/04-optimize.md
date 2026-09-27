@@ -262,11 +262,12 @@ Rules:
 
 ```
 อ่าน knowledge/interest-catalog-INDEX.md → detail file เฉพาะหมวด → list_advanced_targeting_codes เฉพาะเมื่อ cache ไม่พอ
-update_adset(interest_codes=[...], targeting fields...)
+update_adset(interest_groups=[[Need...], [Ability...], [Life Stage...]], targeting fields...)
 ```
 
 Rules:
 - ต้องใช้ official code เท่านั้น
+- ถ้า adset เดิมยังไม่มี App Behavior (หมวดหมู่แอป / ความมั่งคั่ง / ราคามือถือ) ให้เสนอเติมในชั้นที่เกี่ยวข้องเป็นตัวเลือกหนึ่งของการปรับ — ดู `knowledge/interest-detail-app-behavior.md`
 - ถ้ามี `interest_codes` ต้องเป็น `targetingMode=MANUAL`
 - บันทึก targeting เดิมก่อน เผื่อ rollback
 
