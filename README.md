@@ -113,6 +113,19 @@ ln -sf python3.12 ~/line-ads-mcp/.venv/bin/python
 
 Windows ไม่เจอปัญหานี้เพราะ `.venv\Scripts\python.exe` เป็นไฟล์จริง ไม่ใช่ symlink — ถ้า Windows ขึ้น attach error ให้ตรวจว่า path ใน config ตรงกับที่มีไฟล์จริงแทน (`.venv\Scripts\python.exe` ไม่ใช่ `.venv\bin\python`)
 
+### Server crash ทันทีหลัง start (เคยใช้ได้ แต่จู่ๆ attach ไม่ได้)
+
+สาเหตุคือ `mcp` ใน venv ถูกอัปเกรดเป็น 2.x ซึ่งลบ `Server.list_tools` ออกไปแล้ว โปรเจกต์นี้ pin ไว้ที่ `mcp>=1.0.0,<2` ใน `pyproject.toml` ให้ติดตั้งใหม่เพื่อให้กลับมาเป็น 1.x:
+
+```bash
+cd ~/line-ads-mcp
+source .venv/bin/activate
+pip install -e .
+pip show mcp | grep Version
+```
+
+ต้องได้เวอร์ชัน `1.x` แล้วค่อย Quit + เปิด Claude Desktop ใหม่ — ⚠️ อย่าใช้ `uv run` ตรงๆ ในโฟลเดอร์นี้ เพราะมันจะ sync venv และอาจอัปเกรด `mcp` เป็น 2.x อีก (ถ้าจำเป็นให้ใช้ `uv run --no-project`)
+
 ### ขั้นตอนสุดท้าย — ใส่ System Prompt
 
 หลัง restart แล้ว สร้าง **Project** ใหม่ใน Claude Desktop → **Project Instructions** → ก้อปวางเนื้อหาจาก [`CLAUDE_PROJECT_PROMPT.md`](CLAUDE_PROJECT_PROMPT.md) ทั้งหมด
@@ -473,7 +486,7 @@ line-ads-mcp
 | `create_campaign` | `dailyBudgetMicro` / `totalBudgetMicro` (THB × 1M) | `campaignObjective: GAIN_FRIENDS` | ต้องระบุ `start_date` เสมอ เช่น `2026-05-14T09:00:00+07:00` |
 | `update_campaign` | `dailyBudgetMicro` | `configuredStatus` | |
 | `pause_campaign` / `resume_campaign` | — | `configuredStatus: PAUSED/ACTIVE` | |
-| `create_adset` | `dailyBudgetMicro` / `bidAmountMicro` (THB × 1M) | `bidType`, `bidStrategy` required | ถ้ามี `interest_codes` จะใช้ `targetingMode=MANUAL` + `includeAdvancedTargetings` |
+| `create_adset` | `dailyBudgetMicro` / `bidAmountMicro` (THB × 1M) | `bidType`, `bidStrategy` required | ✅ สร้างจริงด้วย `dry_run=false` สำเร็จแล้ว (MANUAL + interest/behavior layers) — ถ้ามี `interest_codes`/`interest_groups`/`behavior_codes` จะใช้ `targetingMode=MANUAL` + `includeAdvancedTargetings` |
 | `update_adset` | `dailyBudgetMicro` / `bidAmountMicro` | `configuredStatus` | |
 | `pause_adset` / `resume_adset` | — | `configuredStatus: PAUSED/ACTIVE` | |
 
@@ -489,6 +502,8 @@ line-ads-mcp
 | Tool | สถานะ |
 |---|---|
 | `create_audience` | API ตอบ 403 ทุก type — ต้องเปิด Custom Audience feature ใน LINE Ads Manager ก่อน |
+
+> ข้อจำกัดนี้กระทบเฉพาะการ **สร้าง** Custom Audience ใหม่ (upload รายชื่อลูกค้า, Lookalike) เท่านั้น — การอ่าน (`list_audiences`) และการใช้ audience ที่มีอยู่แล้วใน `create_adset` (`custom_audience_ids` / `excluded_audience_ids`) ทำงานปกติ
 
 ## Budget & Bid Units
 
@@ -541,6 +556,21 @@ LINE Ads API ไม่รับชื่อ interest ตรง ๆ เช่น 
   { "interests": ["12"] }
 ]
 ```
+
+### App Behavior (หมวดหมู่แอป / ระดับความมั่งคั่ง / persona จากแอป)
+
+code จาก [knowledge/interest-detail-app-behavior.md](knowledge/interest-detail-app-behavior.md) (เช่น `2466` การออกแบบกราฟิก, `2444` ความมั่งคั่งระดับสูง) เป็น **behavior** ไม่ใช่ interest — ใส่ปนกับ interest code ใน `interest_groups` ชั้นเดียวกันได้เลย tool จะแยก key ให้เองตามประเภท code (`interests` / `behaviors` / `purchaseIntents`):
+
+`interest_groups: [["4"], ["12", "2441"]]` จะได้:
+
+```json
+"includeAdvancedTargetings": [
+  { "interests": ["4"] },
+  { "interests": ["12"], "behaviors": ["2441"] }
+]
+```
+
+หรือส่ง behavior แบบกว้างผ่าน `behavior_codes` ก็ได้ — parent code (`TH1...`) เลือกไม่ได้ ใช้เฉพาะ code ตัวเลข
 
 ถ้า `targetingMode=AUTO` interest/custom advanced targeting จะไม่ถูกใช้
 
