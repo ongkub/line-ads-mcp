@@ -1,6 +1,6 @@
 # workflows/04-optimize.md
 # Optimization Workflow
-# Version 3.0 | May 2026 | MCP-first
+# Version 4.0 | October 2026 | MCP-first + verified before/after
 
 ---
 
@@ -31,14 +31,14 @@ Hard stop:
 - ห้ามคำนวณ +20% หรือเลือกเลขแทน user
 - ทุก action ที่เปลี่ยนเงินต้องมีตัวเลขจาก user
 - ทุก write action ต้อง dry-run ก่อน
-- ก่อน dry_run=False ต้องได้คำว่า "ยืนยัน" หรือ "ทำได้เลย"
+- ก่อน dry_run=False ต้องได้คำว่า "ยืนยัน"
 - Pause/resume ก็ต้อง confirm เพราะมีผลกับ spend
 ```
 
-ตัวอย่างที่ถูก:
+ตัวอย่างที่ถูก (ตัวอย่างสมมติ):
 > "อยากเพิ่ม budget จาก ฿100/วัน เป็นกี่บาทครับ?"
 
-ตัวอย่างที่ผิด:
+ตัวอย่างที่ผิด (ตัวอย่างสมมติ):
 > "เพิ่มเป็น ฿150/วันนะครับ" ถ้า user ไม่ได้บอกเลข
 
 ---
@@ -51,6 +51,10 @@ Hard stop:
 | ดู campaign/adset/ad | `list_campaigns`, `list_adsets`, `list_ads`, `get_ad_status` |
 | Pause/resume campaign | `pause_campaign`, `resume_campaign` |
 | Pause/resume adset | `pause_adset`, `resume_adset` |
+| Pause/resume ad | `pause_ad`, `resume_ad` |
+| Snapshot exact entity | `get_entity` |
+| ตรวจยอดใช้จ่ายกับ owner cap | `check_spend_cap` |
+| ประเมิน reach/click min–max (ไม่สร้างอะไร) | `estimate_adset_reach` |
 | Change campaign budget/status | `update_campaign` |
 | Change adset budget/bid/targeting/status | `update_adset` |
 | Upload new creative | `upload_media` |
@@ -81,22 +85,19 @@ Rule สำคัญ:
 
 ## Phase 1 — Intake
 
-ถาม:
+เริ่มจากประโยคเดียว เช่น “ช่วยดูโฆษณาที่เปิดอยู่และแนะนำว่าควรปรับอะไร” AI ดึงบัญชีเอง ไม่ให้ผู้อ่านเตรียม/แนบ/เขียนไฟล์ ยกเว้นรูป creative ถามทีละเรื่องเฉพาะเป้าหมายธุรกิจ, งบ/bid/cap, วันเริ่มถ้าสร้างใหม่, ข้อเท็จจริงสินค้า และ approval ที่ขาด
 
+```text
+list_campaigns(status="ACTIVE", fetch_all=True)
+list_adsets(campaign_id=[ID], status="ACTIVE", fetch_all=True)
+list_ads(campaign_id=[ID], status="ACTIVE", fetch_all=True)
+get_report(level="ADGROUP", start_date=..., end_date=..., campaign_id=[ID], fetch_all=True)
+get_report(level="AD", start_date=..., end_date=..., campaign_id=[ID], fetch_all=True)
 ```
-อยาก optimize campaign ไหนครับ?
-หรือให้ผมดูทั้งหมดก่อนด้วย MCP report?
-```
 
-ถ้า user ระบุชื่อ/ID:
-- `list_campaigns` เพื่อหา campaign
-- `list_adsets`
-- `list_ads`
-- `get_report` ตามช่วงที่เกี่ยวข้อง
+ดึงทุกหน้าเป็น default; `list_adsets`/`list_ads` ไม่ส่ง parent ก็อ่านทั้งบัญชีได้ `list_ads` กรอง `adset_id` ได้ หาก user ขอ resume หรือระบุ entity ที่พักไว้ ให้ค้นเพิ่มด้วย `status="PAUSED"` ไม่สรุปว่าไม่มีเพียงเพราะไม่อยู่ใน ACTIVE
 
-ถ้า user บอก "ดูทั้งหมด":
-- `list_campaigns`
-- `get_weekly_report(level="CAMPAIGN")`
+รายงานใช้ช่วงวันที่ **UTC** (`date_basis="UTC"`) ตรวจ `paging.complete` ก่อนวิเคราะห์ หากอยากเห็นแนวโน้มรายวันใช้ `by_day=True` (วัน×entity สูงสุด 93 วันต่อคำขอ) ค่าเฉลี่ยที่ไม่มีตัวหารเป็น `None` ไม่ใช่ศูนย์ ข้อมูลไม่ครบให้บอกข้อจำกัด
 
 ---
 
@@ -112,13 +113,17 @@ Rule สำคัญ:
 - 7-day metrics หรือช่วงที่ user ขอ
 ```
 
-ใช้ MCP read tools เท่านั้นก่อน
+ใช้ `get_entity(entity_type="campaign"|"adset"|"ad", entity_id=...)` กับเป้าหมายแต่ละตัว เก็บ configured_status, delivery_status, budget, bid, targeting และ raw ในบริบทแชท พร้อม `get_ad_status(ad_id)` แบบ exact ID เมื่อต้องดู review
+
+ก่อน write แต่ละรายการ ให้ดึง `get_entity` อีกครั้งเป็น before snapshot แล้วจึง dry-run หากค่าปัจจุบันต่างจากแผนที่อนุมัติ ให้ทบทวนแผน/ขอ “ยืนยัน” ใหม่ ห้ามใช้ snapshot เก่าทับการเปลี่ยนแปลงล่าสุด
 
 ---
 
 ## Phase 3 — Diagnose
 
 โหลด `knowledge/kpi-benchmarks.md` เฉพาะตอนวิเคราะห์ benchmark
+
+วิเคราะห์ตาม objective เท่านั้น: GAIN_FRIENDS ใช้ CPF/Friends, WEBSITE_TRAFFIC ใช้ CTR/CPC, VIDEO_VIEW ใช้ VTR/CPV, REACH ใช้ CPM/Reach/Frequency, APP_INSTALL ใช้ CPI ส่วน CV/CPA/ROAS ใช้เฉพาะ CONVERSIONS และเฉพาะ metrics ที่ response มีจริง
 
 ### Sequential Check
 
@@ -130,7 +135,7 @@ Step 1: Campaign/adset status
 
 Step 2: Creative review status
   - ถ้า IN_REVIEW → แจ้งว่ายังประเมิน performance ไม่ได้
-  - ถ้า REJECTED → อ่าน reason; ถ้า POLICY_VIOLATION ต้องแก้ copy/image ใหม่ ไม่ใช่ resubmit เดิม
+  - ถ้า NOT_APPROVED (= review rejected) → อ่าน reason; ถ้า POLICY_VIOLATION ต้องแก้ copy/image ใหม่ ไม่ใช่ resubmit เดิม
 
 Step 3: Impressions
   - ถ้า Impressions = 0 → ตรวจ bid, targeting, account/payment, review, audience size
@@ -148,18 +153,18 @@ Patterns:
 ```
 GAIN_FRIENDS:
 - ⚠️ cv = 0 → ปกติสำหรับ GAIN_FRIENDS เสมอ อย่า flag เป็น pixel/tracking issue
-  Friends นับจาก click ไม่ใช่ pixel event — ดู metric จาก `click` และ CPF = spend/click
-- click = 0 + Impressions > 1,000 → bid cap ต่ำ / creative / targeting (ใช้ click ไม่ใช่ cv)
+  ใช้ Friends/result ที่ response ระบุว่าเป็น Friend จริง; ถ้าไม่มีให้บอกว่าคำนวณ CPF ไม่ได้ ห้ามถือว่าทุก click เป็น Friend
+- ไม่มี Friend result แต่มี impressions → ตรวจ creative/bid/targeting ตามหลักฐานจริง ไม่ใช้ cv=0 เป็นเหตุ
 - Impressions = 0 → paused, review, bid ต่ำ, targeting แคบ
 - CPF สูงใกล้ cap → อาจต้องปรับ bid หรือ creative แต่ห้ามเลือกเลขเอง
 
 Website:
-- CTR < 1% + Impressions > 5,000 → creative/headline
+- CTR ต่ำกว่า benchmark ที่เหมาะกับข้อมูล → ตรวจ creative/headline และจำนวน impressions ก่อนสรุป
 - CPC สูง → bid/competition/targeting
 
 All objectives:
 - Campaign/adset paused → ไม่ deliver
-- Creative IN_REVIEW/REJECTED → ยังไม่ deliver หรือแก้ creative
+- Creative IN_REVIEW/NOT_APPROVED → ยังไม่ deliver หรือแก้ creative
 - Budget ใช้น้อยมาก → bid ต่ำ/targeting แคบ/review
 ```
 
@@ -188,17 +193,23 @@ B) ปรับ targeting / เพิ่ม interest / broadening
 C) ปรับ budget หรือ bid cap
    Risk: HIGH, ต้องให้ user ระบุเลขเงินเอง
 
-D) Pause/resume campaign/adset
+D) Pause/resume campaign/adset/ad
    Risk: MEDIUM/HIGH เพราะมีผลกับ spend
 ```
 
-ห้าม execute จาก recommendation ทันที
+เพิ่มข้อเสนอจากข้อมูลจริง:
+
+- ถ้ามี owner cap ให้เรียก `check_spend_cap(cap_amount=..., start_date=..., end_date=..., campaign_id=..., period_end=...)` เทียบ cap ที่เจ้าของระบุ (ไม่ใช้ daily budget แทน cap) ถ้ายังไม่มีให้ถามทีละเรื่อง ห้ามเดาเงิน
+- `exceeded` เฉพาะ spend > cap; เท่ากับ cap เป็น `within_cap`; `indeterminate` = ข้อมูลไม่ครบ ห้ามสรุปว่าเกิน/ไม่เกิน ใช้ per-campaign spend และ optional projection ตาม response โดยแยกประมาณการจากยอดจริง
+- เปรียบเทียบ creative ระดับ AD ภายใน objective/ช่วงวัน UTC เดียวกัน ใช้ spend, impressions, results/ต้นทุนตาม objective และ review/delivery ประกอบ ไม่ฟันธงผู้ชนะจากข้อมูลน้อยหรือบริบท targeting ต่างกัน; แสดงสิ่งที่รู้/ยังไม่รู้ก่อนเสนอ refresh หรือ pause ad
+
+ห้าม execute จาก recommendation ทันที และ **ห้าม auto-pause** ไม่ว่า cap เกิน, creative แพ้ หรือ KPI แย่ ทุกการหยุด/เปิดต้องผ่าน dry-run → สรุป → “ยืนยัน” ก่อน
 
 ---
 
 ## Phase 5 — Confirm
 
-ก่อน write action:
+ก่อน write action ใช้ before snapshot จาก `get_entity` แล้ว dry-run ด้วย tool/args เดียวกับที่จะ execute:
 
 ```
 สรุปก่อนทำ:
@@ -209,7 +220,7 @@ D) Pause/resume campaign/adset
 - ผลกระทบ: [delivery/spend/learning]
 - Risk: [level]
 
-ผมจะทำ dry-run ก่อน ยังไม่ส่งจริง ยืนยันให้ทำ preview ไหมครับ?
+ผมจะทำ dry-run เพื่อตรวจแผนก่อน ยังไม่ส่งจริงครับ
 ```
 
 หลัง dry-run:
@@ -230,12 +241,13 @@ D) Pause/resume campaign/adset
 ```
 pause_campaign / resume_campaign
 pause_adset / resume_adset
+pause_ad(ad_id=..., dry_run=True) / resume_ad(ad_id=..., dry_run=True)
 ```
 
 Rules:
 - dry-run ก่อน
 - confirm ก่อน write จริง
-- read back หลังทำ
+- หลัง “ยืนยัน” จึงเรียก tool เดิมด้วย `dry_run=False` แล้วแสดง `before`, `readback`, `readback_ok`; ไม่ผ่านต้องแจ้งว่ายังยืนยันผลไม่ได้
 
 ### Change Budget
 
@@ -281,37 +293,34 @@ create_ad
 Rules:
 - upload media ต้อง confirm เพราะเป็น write action
 - create ad ต้อง dry-run + confirm
-- read back ด้วย list_ads/get_ad_status
+- สร้าง ad ใหม่เป็น `status="PAUSED"` default; แสดง `readback`/`readback_ok` แล้วตรวจ `get_entity` และ `get_ad_status`; resume เป็น approval แยกต่างหาก
 
 ---
 
 ## Phase 7 — Snapshot After
 
-หลัง write จริง:
+หลัง `dry_run=False` ทุกครั้ง:
 
-```
-1. read back target ด้วย MCP
-2. เทียบ before/after
-3. แจ้ง status reasons
-4. ถ้า LINE ยัง process/review ให้บอกว่า pending
-```
+1. แสดง `readback` / `readback_ok` จาก response; update/pause/resume มี `before` snapshot ด้วย
+2. เรียก `get_entity` ของ exact target ตรวจ configured_status กับ delivery_status แยกกัน และใช้ `get_ad_status(ad_id)` สำหรับ review; `NOT_APPROVED` คือถูกปฏิเสธ, `IN_REVIEW` ยังรอ
+3. เทียบ before/after กับสิ่งที่ยืนยัน หาก readback ไม่ครบ/ไม่ตรง/`readback_ok=false` ห้ามบอกว่าสำเร็จหรือ retry write ซ้ำทันที ให้ตรวจข้อมูลล่าสุดก่อน
+4. ถ้ามี `workspace_dir` ส่งกับ write tool เพื่อ append before/after/time ใน `line-ads-data/change_log.jsonl`; fallback env `LINE_ADS_WORKSPACE_DIR` ไม่ให้ผู้อ่านเตรียมไฟล์ ถ้าไม่ตั้ง path อย่าอ้างว่ามี log ถ้า log ล้มเหลวให้แยกจากผล API และแจ้งตามจริง
 
-ตัวอย่าง:
+| รายการ | ก่อน | หลังที่อ่านกลับ |
+|---|---|---|
+| [entity ID / field] | [ค่าจาก before] | [ค่าจริงจาก readback/get_entity] |
+| configured_status / delivery_status | [ค่าจริง] | [ค่าจริง + เหตุผลถ้ามี] |
 
-```
-ปรับเรียบร้อยครับ
-- ก่อน: targetingMode=AUTO
-- หลัง: targetingMode=MANUAL + interest code 4
-- Delivery ยังไม่รัน เพราะ CAMPAIGN_PAUSED / CREATIVE_REVIEW_IN_REVIEW
-```
+ตารางใช้ค่าจริงเท่านั้น ถ้ายัง process/review ให้บอกว่า pending ไม่รับประกันว่าจะ deliver ทันที
 
 ---
 
 ## Phase 8 — Follow-up
 
 ```
-อยากให้ผมตามดูผลใน 24-48 ชม.ไหมครับ?
-ถ้าตั้ง report ให้ไป MODE 3
+สรุปวันติดตามผล: [วัน/เวลา + timezone ที่คำนวณจริง 24–48 ชั่วโมงหลังปรับ]
+บอกช่วงรายงานที่จะตรวจเป็น UTC และ metrics ตาม objective
+หากต้องการรายงานอัตโนมัติ ให้ไป MODE 3 ไม่อ้างว่าตั้งแล้ว
 ```
 
 ถ้า user ขอ schedule → switch to `03-report-schedule.md`
@@ -328,10 +337,10 @@ Rules:
 | เพิ่ม bid | update กลับค่าเดิม หลัง user confirm |
 | pause | resume หลัง user confirm |
 | resume | pause หลัง user confirm |
-| targeting change | update targeting กลับ snapshot เดิม |
-| creative change | pause ad ใหม่ หรือสร้าง creative ใหม่ ห้าม delete |
+| targeting change | update targeting กลับ snapshot เดิม หลัง dry-run + “ยืนยัน” |
+| creative change | pause_ad หรือสร้าง creative ใหม่ หลัง dry-run + “ยืนยัน”; ห้าม delete |
 
-Rollback ที่กระทบเงินต้อง confirm ใหม่เสมอ
+Rollback ทุก write ต้อง dry-run → สรุป → “ยืนยัน” → execute → readback ใหม่เสมอ
 
 ---
 
@@ -362,5 +371,5 @@ Token discipline:
 
 ---
 
-*Version 3.0 | May 2026*
+*Version 4.0 | October 2026*
 *Updated: MCP-first optimization, dry-run execute flow, targeting/creative update via MCP, browser fallback scope*

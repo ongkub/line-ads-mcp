@@ -1,6 +1,6 @@
 # workflows/02-campaign.md
 # Campaign + Ad Set + Ad Creation
-# Version 3.4 | September 2026 | MCP-first + Customer Avatar-first targeting + App Behavior
+# Version 4.0 | October 2026 | MCP-first + PAUSED creation + verified readback
 
 ---
 
@@ -60,7 +60,7 @@ Hard stop:
 - ต้องถาม user ให้ระบุเลขเงินก่อนสร้าง dry-run
 - ทุก write action ต้อง dry_run=True ก่อน
 - ต้องสรุป payload/ตัวเลขให้ user ตรวจ
-- ต้องได้คำว่า "ยืนยัน" หรือ "ทำได้เลย" ก่อน dry_run=False
+- ต้องได้คำว่า "ยืนยัน" ก่อน dry_run=False
 - ถ้าเปลี่ยนจำนวน adset/ad/creative จากแผนเดิม ต้อง confirm ใหม่
 ```
 
@@ -68,24 +68,11 @@ Hard stop:
 
 ## Phase 0 — Method Choice
 
-หลังรู้ว่า user ต้องการสร้างโฆษณา ต้องให้ user เลือกวิธีสร้างก่อนเสมอ:
+เริ่มจากแชทประโยคเดียว เช่น “ช่วยสร้างโฆษณาเพิ่มเพื่อนให้หน่อย” ใช้ PATH B (`MCP_MANUAL`) เป็น default และดึงข้อมูลบัญชีด้วย MCP เอง ไม่ถามสิ่งที่บัญชีตอบได้
 
-```
-สร้างแคมเปญได้ 3 วิธีครับ:
+ถามทีละเรื่องเฉพาะสิ่งที่ขาด: เป้าหมายธุรกิจ, งบ/bid (ห้ามเดา), วันเริ่ม, ข้อเท็จจริงสินค้า และ approval ผู้อ่านไม่ต้องเตรียม/แนบ/เขียนไฟล์ ยกเว้นรูป creative
 
-1. MCP Manual/API-first — แนะนำ ใช้ API โดยตรง ประหยัด token และกำหนด audience/bid ได้ชัด
-2. LINE AI Agent — เร็วกว่า ให้ LINE ช่วยสร้างรูป/copy/auto targeting แต่คุม audience ละเอียดน้อย
-3. Browser Manual — ใช้หน้าเว็บเอง เหมาะกับงานที่ API ยังทำไม่ได้
-
-อยากใช้วิธีไหนครับ?
-```
-
-บันทึกเป็น `campaign_creation_method`:
-- `MCP_MANUAL` = PATH B default
-- `AI_AGENT` = PATH A
-- `BROWSER_MANUAL` = PATH C fallback
-
-ถ้า user ไม่แน่ใจ ให้แนะนำ `MCP_MANUAL` ยกเว้น user ต้องการใช้ LINE AI Agent หรือขั้นตอนเป็น KYC/payment/UI-only
+ถ้าผู้ใช้ต้องการ LINE AI Agent ให้ใช้ PATH A; งาน UI-only หรือ MCP ใช้ไม่ได้ค่อยใช้ PATH C ไม่ต้องให้เลือกวิธีใหม่ทุกครั้ง
 
 ---
 
@@ -113,9 +100,9 @@ Hard stop:
 
 **กฎเหล็ก: ห้ามเปิดหน้า Interest แล้วเริ่มติ๊กทันที** — ต้องตอบคำถาม "ลูกค้าคนนี้คือใคร?" ให้ได้ก่อน ไม่งั้นเป็นการ**กอง Interest ที่ดูเกี่ยวข้อง** ไม่ใช่การสร้าง Audience จริง (พบบ่อยในสินค้าราคาสูง เช่น บ้าน 10 ล้าน ที่ใช้งบ 7 หลัก/เดือนแต่หาลูกค้าจริงไม่ได้ เพราะเริ่มคิดจาก Interest ก่อน Customer Avatar)
 
-ถาม user 3 ชั้นตามลำดับ ก่อนไปหน้า Interest:
+ใช้หลักฐานจากบัญชีร่วมกับคำตอบ user เติม `customer_avatar` 3 ชั้นตามลำดับ ก่อนไปหน้า Interest; ถามทีละเรื่องเฉพาะข้อเท็จจริงที่บัญชีตอบไม่ได้ และไม่ถือว่า targeting เดิมพิสูจน์กำลังซื้อหรือช่วงชีวิต:
 
-| ชั้น | คำถาม | ตัวอย่าง (บ้านเดี่ยว 10 ล้าน) | สัญญาณจากแอปในมือถือ (App Behavior) |
+| ชั้น | คำถาม | บ้านเดี่ยว 10 ล้าน (ตัวอย่างสมมติ) | สัญญาณจากแอปในมือถือ (App Behavior) |
 |---|---|---|---|
 | Need | ลูกค้ากำลังมองหาสินค้า/บริการประเภทนี้อยู่ไหม แสดงออกยังไง | มองหาบ้าน/สนใจอสังหาริมทรัพย์ | ใช้แอปหมวดไหนที่ตรงกับปัญหา เช่น แอปท่องเที่ยว / การศึกษา / แอปทำงาน |
 | Ability | ลูกค้ามีกำลังซื้อระดับนี้ไหม มีสัญญาณอะไรบ่งบอก | สนใจการเงิน/การลงทุน | ระดับความมั่งคั่ง + ราคามือถือที่ใช้ |
@@ -124,8 +111,9 @@ Hard stop:
 ทุกชั้นต้องถามต่อ 1 ข้อ: **"ลูกค้ากลุ่มนี้น่าจะใช้แอปแบบไหนในมือถือ?"** แล้ว map เป็น app code จาก `knowledge/interest-detail-app-behavior.md` ใส่ในชั้นนั้น (OR ร่วมกับ interest เดิม)
 
 - ถ้า user ตอบไม่ได้ ให้ช่วย prompt ทีละชั้น อย่าข้ามไปเลือก Interest เอง
-- บันทึกผลเป็น `customer_avatar`: `{ need, ability, life_stage }` ใช้ map ต่อใน Interest Targeting
-- Audience ไม่มีขนาดที่ "ดีที่สุด" มีแต่ขนาดที่เหมาะกับงบ — ห้ามแคบจนเหลือหลักหมื่นด้วยความเชื่อว่ายิ่งแคบยิ่งแม่น (ดู Audience Size Check)
+- บันทึกผลเป็น `customer_avatar`: `{ need, ability, life_stage }` พร้อมหลักฐาน/คำตอบที่รองรับ ใช้ map ต่อใน Interest Targeting
+- Custom audience ไม่แทน Customer Avatar Gate; ต้องตอบครบก่อนเลือก targeting แม้มีฐานเดิมอยู่แล้ว
+- Audience ไม่มีขนาดที่ "ดีที่สุด" มีแต่ขนาดที่เหมาะกับงบ — ห้ามแคบจนเหลือหลักหมื่นด้วยความเชื่อว่ายิ่งแคบยิ่งแม่น (ดู Reach Estimate ก่อนสร้าง Ad Set)
 
 ### 1C — Ad Level (ถามสุดท้าย หลัง Ad Set ชัดแล้ว)
 
@@ -175,10 +163,10 @@ Reach → CPM/auto ต้องมาจาก user
 - Adset plan: [จำนวน + targeting]
 - Creative plan: [จำนวน ads + format]
 
-ยืนยันให้ผมทำ dry-run ตามนี้ไหมครับ?
+ผมจะตรวจ dry-run แล้วสรุปก่อนขอคำว่า "ยืนยัน" สำหรับ write แต่ละครั้งครับ
 ```
 
-เมื่อ user ยืนยันแผน ให้เรียก MCP ด้วย `dry_run=True` ก่อนทุก write tool
+เรียก MCP ด้วย `dry_run=True` ก่อนทุก write tool; การเห็นชอบแผนยังไม่อนุญาตให้ส่งจริง
 
 ---
 
@@ -189,7 +177,7 @@ Reach → CPM/auto ต้องมาจาก user
 ใช้ read tools ก่อนสร้าง:
 
 ```
-1. list_campaigns
+1. list_campaigns(fetch_all=True)
 2. ถ้ามี campaign คล้ายกัน ให้แจ้ง user ก่อนสร้างซ้ำ
 3. ถ้า objective = GAIN_FRIENDS ให้ list_audiences เพื่อหา active_friends_audience_id
 4. ถ้ามี interest ให้ map จาก `knowledge/interest-catalog-INDEX.md` ก่อน แล้วค่อยโหลด detail file หรือเรียก `list_advanced_targeting_codes` เฉพาะเมื่อ cache ไม่พอ
@@ -208,11 +196,12 @@ Rules:
 Flow:
 
 ```
-create_campaign(..., dry_run=True)
-แสดง payload
-รอ user ยืนยัน
-create_campaign(..., dry_run=False)
-read back ด้วย list_campaigns
+create_campaign(..., status="PAUSED", dry_run=True)
+สรุปชื่อ objective งบ วันเริ่ม และสถานะ PAUSED เป็นตัวเลขชัดเจน
+รอ user พิมพ์ "ยืนยัน"
+create_campaign(..., status="PAUSED", dry_run=False)
+แสดง readback และ readback_ok จาก response
+get_entity(entity_type="campaign", entity_id=[ID ที่สร้าง]) เพื่อตรวจ configured_status/delivery_status
 ```
 
 ### Step B2 — Create Adset
@@ -224,7 +213,7 @@ Tool: `create_adset`
 ```
 1. list_audiences
 2. หา `active_friends_audience_id`
-3. ใส่ใน `excluded_audience_ids`
+3. ตรวจว่า audience เพื่อนปัจจุบัน status=READY และ usable_in_adset=true แล้วใส่ใน `excluded_audience_ids`; ถ้าไม่พบหรือยังไม่พร้อม ให้พักขั้นสร้าง ad set ห้ามเดา ID หรือข้ามการยกเว้นเพื่อน
 4. ใช้ bid_type="CPF"
 5. ใช้ auto_bid_type="FRIEND"
 6. ถ้า bid_strategy="COST_CAP" ต้องมี bid_amount จาก user
@@ -264,13 +253,58 @@ Tool: `create_adset`
    ใส่ interest/behavior/purchase intent code ปนกันใน `interest_groups` ชั้นเดียวกันได้ — tool แยก key ตามประเภท code ให้เอง (behavior รวมถึงหมวดหมู่แอปทั้งหมด ห้ามอยู่ใต้ `interests`)
 ```
 
-### Audience Size Check
+### Custom Audience — เลือกหรือสร้างก่อน Create Ad Set
 
-สูตรอ้างอิงเร็ว: **Audience Size ≈ Budget ÷ CPM × 5,000**
+ทำหลัง **Customer Avatar Gate** และวาง targeting แล้ว แม้รับแผนมาจาก MODE 6 ก็ต้องผ่าน gate เดียวกัน
 
-- ก่อนสรุปแผน (Phase 2) ให้ประเมินคร่าวๆ ว่า audience ที่ map จาก avatar ใหญ่พอสำหรับงบที่ user จะใช้ไหม ถ้าดูแคบเกินไปเทียบกับงบ ให้เตือน user ก่อนสร้างจริง — Audience ไม่มีขนาดที่ดีที่สุด มีแต่ขนาดที่เหมาะกับงบ
-- หลังสร้าง adset จริง (หรือหลาย adset สำหรับ compare) ให้เรียก `get_adset_audience_size(campaign_id)` เพื่อตรวจ `targetReachRatio` ของแต่ละ adset
-- ถ้า tool แจ้ง `balance_warning` (ต่างกันเกิน 3x) ให้แจ้ง user และเสนอปรับ targeting ให้ใกล้กันก่อน compare ผล
+1. เรียก `list_audiences()` แสดงชื่อ/ID และ `estimated_audience_size` ของรายการที่ `status="READY"` และ `usable_in_adset=true` ให้เลือกตามแผน; รายการที่ยังไม่พร้อมแจ้ง status แยกไว้ ไม่ใช้กับ ad set
+2. ขนาด `"-"` หมายถึงเล็กเกินรายงาน; `"100 or fewer"` หมายถึงไม่เกิน 100 คน ไม่ใช่จำนวนที่แน่นอน; ถ้าไม่คืนขนาดให้บอกไม่ทราบ ไม่เติม 0
+3. ถ้าต้องใช้ฐานที่ยังไม่มี เสนอ `create_audience(name, function_type, config, dry_run=True, workspace_dir=None)` ตามชนิดด้านล่าง ใช้ source IDs/config ที่ตรวจได้จริง ไม่เดา ID หรือ config; บัญชีต้องมีสิทธิ์ Custom Audience
+
+| function_type | ฐานที่จะสร้าง | ต้องตรวจ |
+|---|---|---|
+| `LOOKALIKE` | คนคล้ายฐานต้นทาง | source audience + size ratio ที่ผู้ใช้เลือก |
+| `APP_EVENT` | ผู้ทำ event ในแอป | แอป/event ต้นทางที่มีจริง |
+| `WEBTRAFFIC` | ผู้เข้าเว็บจาก LINE Tag | LINE Tag และ retentionDays 1–180 วัน |
+| `ACCOUNT_FRIENDS` | เพื่อน LINE OA | OA ต้นทางที่มีจริง |
+| `VIDEO_VIEW` | ผู้ดูวิดีโอโฆษณาที่ผ่านมา | โฆษณาวิดีโอต้นทาง |
+| `IMAGE_CLICK` | ผู้คลิกรูปโฆษณาที่ผ่านมา | โฆษณารูปต้นทาง |
+
+Customer-list upload (hashed phone/email) **ไม่รองรับผ่าน MCP** ให้ผู้ใช้ทำเองใน LINE Ads Manager ไม่ขออ่าน/แนบไฟล์ลูกค้า
+
+```text
+create_audience(name=..., function_type=..., config=..., dry_run=True)
+สรุปชื่อ ชนิด แหล่งข้อมูล และค่าที่ตั้ง เช่น retentionDays/size ratio; ขนาดฐานใหม่ยังไม่ทราบจน LINE สร้างเสร็จ
+รอ user พิมพ์ "ยืนยัน"
+create_audience(name=..., function_type=..., config=..., dry_run=False)
+ตรวจ id/status ใน response (ปกติ IN_PROGRESS) แล้วเรียก list_audiences() ตรวจ ID/status/ขนาด
+```
+
+ฐานใหม่เริ่ม `IN_PROGRESS` แจ้งว่ายังใช้ใน ad set ไม่ได้ แล้ว re-check `list_audiences()` ก่อนใช้จริง
+ถ้ายังไม่ READY ให้ถามทีละเรื่องว่า “จะรอฐานพร้อม หรือสร้าง ad set โดยไม่ใช้ฐานใหม่นี้ครับ?” ไม่ตัดฐานออกเอง
+ถ้าเลือกไม่ใช้ ให้ทบทวน targeting/reach และ dry-run แผนใหม่ก่อนขอ “ยืนยัน”; สำหรับ GAIN_FRIENDS ยังต้องยกเว้น active friends audience ที่พร้อมใช้เสมอ ถ้าฐานยกเว้นนี้ไม่พร้อมต้องรอ
+
+เมื่อ READY และ `usable_in_adset=true` แล้ว ส่ง ID ที่เลือกใน `custom_audience_ids` / `excluded_audience_ids` ให้ทั้ง `estimate_adset_reach` และ `create_adset` ด้วยชุดเดียวกัน ห้ามใช้ ID ที่ยัง IN_PROGRESS หรือเดา ID
+
+### Reach Estimate ก่อนสร้าง Ad Set (optional)
+
+ใช้ `estimate_adset_reach(campaign_id=..., campaign_objective=..., daily_budget=..., bid_type=..., auto_bid_type=..., targeting=...)` กับแผน targeting ก่อนสร้าง ad set ได้ รองรับ targeting params แบบ `create_adset` และ optional `adset_id`, `bid_amount`, `bid_strategy`
+
+- เป็น LINE Adgroup Result Simulator (`simulation/ars`): คืน reach min–max และ click min–max เป็นค่าประมาณ ไม่ใช่จำนวน audience จริงหรือผลรับประกัน และไม่สร้างอะไร
+- ส่ง `custom_audience_ids` / `excluded_audience_ids` ชุดที่จะใช้สร้างจริงด้วย โดยตรวจ READY/usable_in_adset ก่อนจำลอง
+- ใช้งบ/bid ที่ user ระบุเท่านั้น เปรียบเทียบแผนภายใต้เงื่อนไขเดียวกัน; ถ้ามี absent/invalid fields ให้แจ้งข้อมูลที่ขาด ห้ามเติมตัวเลขเอง
+- ไม่ใช้สูตรคำนวณ audience หรือ `targetReachRatio`/`balance_warning` ที่ tool นี้ไม่ได้รับรอง
+
+### Create Ad Set หลังทบทวน targeting
+
+```text
+create_adset(..., custom_audience_ids=ready_include_ids, excluded_audience_ids=ready_exclude_ids, status="PAUSED", dry_run=True)
+สรุปงบ bid targeting อายุ audience IDs/ขนาด/status และ exclusions ให้ชัด
+รอ user พิมพ์ "ยืนยัน"
+create_adset(..., custom_audience_ids=ready_include_ids, excluded_audience_ids=ready_exclude_ids, status="PAUSED", dry_run=False)
+แสดง readback และ readback_ok
+get_entity(entity_type="adset", entity_id=[ID ที่สร้าง])
+```
 
 Live-tested mapping:
 
@@ -278,7 +312,7 @@ Live-tested mapping:
 |---|---|
 | Marketing / Branding / Advertising / Business | `4` = อาชีพและธุรกิจ |
 
-ตัวอย่าง payload ที่ถูก:
+ตัวอย่าง payload ที่ถูก (ตัวอย่างสมมติ):
 
 ```json
 {
@@ -312,7 +346,7 @@ Live-tested mapping:
 ถ้า user บอกช่วงอายุที่ไม่ตรง bracket:
 - Map ไปหาค่าที่ใกล้ที่สุดและ**ครอบคลุม**ช่วงนั้น เช่น 18–60 → 20–64, 22–28 → 20–29
 - แสดงตัวเลือกที่ valid ให้ user เลือก อย่าตัดสินใจแทน
-- ตัวอย่าง: user บอก "28-45" → เสนอ `25-44` (แคบกว่า) หรือ `25-54` (กว้างกว่า) แล้วรอ confirm
+- (ตัวอย่างสมมติ): user บอก "28-45" → เสนอ `25-44` (แคบกว่า) หรือ `25-54` (กว้างกว่า) แล้วรอ confirm
 
 ### Step B3 — Upload Media
 
@@ -331,8 +365,9 @@ Flow:
 
 ```
 upload_media(file_path, dry_run=True)
-รอ user ยืนยันให้อัปโหลด
+สรุปไฟล์ที่จะอัปโหลด แล้วรอ user พิมพ์ "ยืนยัน"
 upload_media(file_path, dry_run=False)
+แสดง readback และ readback_ok; ถ้าไม่มี/ตรวจไม่ผ่าน ให้แจ้งว่ายังไม่ยืนยันผล
 เก็บ imageHash จาก response.object.obsHash
 ```
 
@@ -357,18 +392,21 @@ imageHash จาก upload_media
 Flow:
 
 ```
-create_ad(..., dry_run=True)
-แสดง payload
-รอ user ยืนยันสร้าง Ad
-create_ad(..., dry_run=False)
-read back ด้วย list_ads / get_ad_status
+create_ad(..., status="PAUSED", dry_run=True)
+สรุป creative ข้อความ parent IDs และสถานะ PAUSED
+รอ user พิมพ์ "ยืนยัน"
+create_ad(..., status="PAUSED", dry_run=False)
+แสดง readback และ readback_ok
+get_entity(entity_type="ad", entity_id=[ad_id])
+get_ad_status(ad_id=[ad_id]) เพื่อดู review/delivery ด้วย exact ID
 ```
 
 Live-tested result:
 - create ad สำเร็จผ่าน MCP
 - image review อาจ `APPROVED`
 - creative review อาจ `IN_REVIEW`
-- delivery อาจ `NOT_DELIVERING` ถ้า campaign/adset paused
+- delivery อาจ `NOT_DELIVERING` เพราะ campaign/adset/ad เป็น PAUSED
+- `NOT_APPROVED` = review rejected ต้องแก้เหตุผลที่ถูกปฏิเสธ ไม่ใช่เพียงรอต่อ
 
 ---
 
@@ -377,6 +415,7 @@ Live-tested result:
 ใช้เมื่อ user ต้องการให้ LINE AI ช่วยคิดรูป/copy/auto targeting และ objective อยู่ในกลุ่มที่รองรับ
 
 ข้อจำกัด:
+- รองรับ Friend Added / Website Click / Reach เท่านั้น
 - Targeting เป็น Auto เป็นหลัก
 - Interest/custom audience คุมละเอียดไม่ได้
 - ต้องใช้ browser/Cowork เพราะเป็น UI-only
@@ -411,7 +450,7 @@ Sensitive upload เช่น phone/email customer list ให้ default เป
 
 **ห้ามแนะนำ Broad targeting** ไม่ว่ากรณีใด — ไม่มี "Broad adset" ในแผนเลย
 
-Multiple Ad Sets หมายถึงการแบ่ง **Customer Avatar ที่ต่างกัน** (ไม่ใช่สลับ Interest แบบสุ่ม) เพื่อ compare ว่า avatar ไหน perform ดีกว่า เช่น กรณีบ้าน 10 ล้าน:
+Multiple Ad Sets หมายถึงการแบ่ง **Customer Avatar ที่ต่างกัน** (ไม่ใช่สลับ Interest แบบสุ่ม) เพื่อ compare ว่า avatar ไหน perform ดีกว่า เช่น กรณีบ้าน 10 ล้าน (ตัวอย่างสมมติ):
 - Adset A: avatar "ครอบครัวมีลูก มองหาบ้านหลังแรก" → Need=บ้านและสวน + Ability=การเงิน + Life Stage=ครอบครัว/เลี้ยงดูบุตร
 - Adset B: avatar "นักลงทุนอสังหาฯ" → Need=อสังหาริมทรัพย์ + Ability=การลงทุน/กำลังซื้อสูง + Life Stage=วัยทำงานมั่นคง
 - Adset C: avatar "คู่แต่งงานใหม่กำลังหาบ้าน" → Need=บ้านและสวน + Ability=การเงิน + Life Stage=งานแต่งงาน
@@ -440,7 +479,7 @@ Multiple Ad Sets หมายถึงการแบ่ง **Customer Avatar �
 - Campaign: [ชื่อ/ID] | Objective | ฿[X]/วัน
 - Adset: [ชื่อ/ID] | Bid ฿[Y] | Targeting summary
 - Ads: [จำนวน] | creative format | review status ถ้ามี
-- สถานะหลังสร้าง: active/paused ตามแผน
+- สถานะหลังสร้าง: campaign/adset/ad เป็น PAUSED ทั้งหมด
 
 พิมพ์ "ยืนยัน" เพื่อดำเนินการจริง
 ```
@@ -459,7 +498,11 @@ Multiple Ad Sets หมายถึงการแบ่ง **Customer Avatar �
 📌 Delivery status: [status + reasons]
 ```
 
-เสนอ MODE 3 report schedule ต่อทันที
+สรุปว่าโครงสร้างพร้อมเมื่อ IDs ครบ, `readback_ok=true` และค่าตรงแผนทุกขั้น พร้อมผล `get_entity`/`get_ad_status` ล่าสุด แยก “สร้างครบ” จาก “ผ่าน review/พร้อม delivery”; `IN_REVIEW` ยังรอ, `NOT_APPROVED` คือถูกปฏิเสธ หาก readback ไม่ตรง/อ่านไม่ได้ ห้ามรายงานว่าสำเร็จหรือทำ write ซ้ำทันที ให้ตรวจ exact ID ก่อน
+
+Campaign → Ad Set → upload media → Ad จบที่ PAUSED; media ไม่มีสถานะเปิด/พัก ห้ามเปิดให้อัตโนมัติ หาก review ผ่านและไม่มี delivery blocker จึงบอกว่าพร้อมขอเปิดใช้งาน การใช้ `resume_campaign` / `resume_adset` / `resume_ad` เป็นอีกชุด approval ผ่าน MODE 4: dry-run → สรุปงบ/ผลกระทบ → “ยืนยัน” → execute → readback แยกจาก approval สร้าง
+
+ถ้ามี `workspace_dir` ให้ส่งกับ write tools เพื่อบันทึก `line-ads-data/change_log.jsonl` (fallback `LINE_ADS_WORKSPACE_DIR`); AI จัดการไฟล์เอง ไม่ให้ผู้อ่านเตรียมไฟล์ เสนอ MODE 3 report schedule ต่อ
 
 ---
 
@@ -500,11 +543,11 @@ Multiple Ad Sets หมายถึงการแบ่ง **Customer Avatar �
 6. ใช้ official codes สำหรับ interest เท่านั้น
 7. ไม่มี delete tools ใช้ pause แทน
 8. ห้ามเลือก Interest ก่อนตอบคำถาม "ลูกค้าคนนี้คือใคร" (Customer Avatar Gate) — กองไม่ใช่ Audience
-9. Audience ไม่มีขนาดที่ดีที่สุด มีแต่ขนาดที่เหมาะกับงบ ใช้ `get_adset_audience_size` เช็คก่อน compare
+9. ใช้ `estimate_adset_reach` เป็น optional reach/click min–max estimate ก่อนสร้าง ad set ไม่ใช่ขนาด audience จริง
 
 ---
 
-*Version 3.4 | September 2026*
+*Version 4.0 | October 2026*
 *Updated: หมวดหมู่แอป/App Behavior (`interest-detail-app-behavior.md`) ใช้เติมชั้น Need/Ability/Life Stage; `interest_groups` แยก interests/behaviors/purchaseIntents อัตโนมัติ; อายุตรงกับ dropdown UI (min 20–65, max 24–64 หรือไม่ตั้งค่า)*
 *v3.3: Customer Avatar Gate (Need/Ability/Life Stage) ก่อนเลือก Interest, Audience Size Check, multiple adsets = multiple avatars*
 *v3.2: Intake order Campaign→AdSet→Ad, ห้าม Broad targeting, multiple adsets = multiple Interest groups for compare*

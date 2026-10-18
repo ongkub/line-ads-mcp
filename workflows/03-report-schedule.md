@@ -1,275 +1,112 @@
 # workflows/03-report-schedule.md
 # LINE Ads Report + Scheduled Tasks Workflow
-# Version 3.0 | May 2026 | MCP-first
+# Version 4.0 | October 2026 | MCP-first + spend cap
 
----
+## Entry Point — บทที่ 2
 
-## Overview
+เริ่มจากประโยคเดียว เช่น “ช่วยสรุปผลโฆษณาเมื่อวาน และรายงานทุกเช้า” AI ดึงบัญชี/ชื่อ/IDs/objective ผ่าน MCP เอง ไม่ให้ผู้อ่านเตรียม แนบ หรือเขียนไฟล์
 
-MODE 3 ใช้ MCP report tools เป็น default ไม่ใช้ browser dashboard ยกเว้นต้องตรวจ visual/chart ที่ API ไม่มี
+ถามทีละเรื่องเฉพาะสิ่งที่บัญชีตอบไม่ได้: ขอบเขตที่กำกวม, เวลา/ความถี่, cap และช่วงเวลาที่ cap ครอบคลุม ห้ามเดาเงินจาก daily budget หรือถือว่า budget เท่ากับ owner cap
 
-```
-Instant Report  → get_report / get_daily_report / get_weekly_report
-Scheduled Report → scheduled task เรียก MCP report tools
-Status Check → list_campaigns / list_adsets / list_ads / get_ad_status
-Browser Fallback → ใช้เฉพาะ API error, login/account issue, หรือ visual QA
-```
-
----
-
-## Entry Point
-
-Trigger:
-- หลังสร้าง campaign/ad/adset เสร็จ
-- "ดู report"
-- "ดูผลโฆษณา"
-- "campaign เป็นยังไงบ้าง"
-- "ตั้งรายงานอัตโนมัติ"
-
-หลังสร้าง campaign เสร็จ ให้เสนอ:
-
-```
-ตั้งรายงานอัตโนมัติไหมครับ?
-ค่าเริ่มต้น: ทุกวัน 09:00 ดึงผ่าน MCP API ไม่ต้องเปิด Chrome
-แจ้งเตือนเมื่อ ad reject, ไม่มี delivery, CPF/CPC สูงผิดปกติ, หรือใช้งบผิด pace
-```
-
----
-
-## MCP Tools
-
-| งาน | Tool |
-|---|---|
-| รายงานตามช่วงวันที่ | `get_report` |
-| รายงานเมื่อวาน | `get_daily_report` |
-| รายงาน 7 วันล่าสุด | `get_weekly_report` |
-| ดู campaigns | `list_campaigns` |
-| ดู adsets | `list_adsets` |
-| ดู ads | `list_ads` |
-| ดู creative/ad review | `get_ad_status` |
-
-Read-only tools เรียกได้เลย ไม่ต้อง confirm เพราะไม่กระทบเงิน
-
----
+ใช้ MCP เป็น default; browser เฉพาะ account/login issue หรือข้อมูลที่ API ไม่มี ห้ามเปลี่ยน budget/bid/status จาก workflow รายงาน
 
 ## Knowledge Loading Gate
 
-ก่อนเริ่ม MODE 3 ต้องอ่าน:
-- `knowledge/kpi-benchmarks.md` — ใช้ตีความ CTR, CPC, CPM, budget alerts และ diagnosis rules
-- `workflows/03-report-schedule.md` — ใช้ยืนยันว่า report ใช้ MCP-first ไม่ใช่ browser dashboard เป็น default
+- อ่าน workflow นี้และ `knowledge/report-metrics.md` ก่อนดึง/สรุปผล
+- อ่าน `knowledge/kpi-benchmarks.md` เมื่อต้องวิเคราะห์ตามคำขอทันที (on-demand) เท่านั้น ไม่ใส่ benchmark alerts ใน scheduled task
+- ถ้าจะปรับโฆษณา ให้ส่งต่อ `workflows/04-optimize.md` และขอ approval ใหม่
 
-โหลดเพิ่มตามจังหวะ:
-- ถ้าจะเสนอ action ปรับ bid/budget/status ให้หยุดที่ recommendation แล้วส่งต่อ `workflows/04-optimize.md`
-- ถ้าจะวิเคราะห์ creative/media issue ให้ดู `knowledge/ad-specs.md`
+## Phase 1 — รายงานทันที
 
-Rule สำคัญ:
-- MODE 3 เป็น read-only; ห้าม pause/resume/update budget จาก report workflow
-- ต้องบอกช่วงวันที่ของ report ทุกครั้ง
-- ต้องระบุ timezone เป็น Asia/Bangkok/+07:00 ทุกครั้ง เพื่อกัน report date คลาดจาก GMT
-- ถ้า data น้อยหรือ campaign อายุ < 7 วัน ต้องแจ้งว่า insight ยัง limited
+1. ใช้ `list_campaigns(status=None, fetch_all=True)`, `list_adsets(campaign_id=None, status=None, fetch_all=True)` และ `list_ads(adset_id=None, campaign_id=None, status=None, fetch_all=True)` เพื่อ resolve IDs ที่ต้องใช้ แต่ละ list อ่านทุกหน้าและกรอง ACTIVE/PAUSED/REMOVED ได้
+2. เมื่อวานใช้ `get_daily_report` (ระดับ AD เป็น default); ช่วงอื่นใช้ `get_report(level="CAMPAIGN"|"ADGROUP"|"AD", start_date=..., end_date=..., campaign_id=None, adgroup_id=None, fetch_all=True, by_day=False)` หรือ `get_weekly_report(by_day=False)`
+3. ต้องการรายวันใช้ `by_day=True` = หนึ่งแถวต่อวัน×entity สูงสุด 93 วันต่อคำขอ แบ่งช่วงเมื่อเกิน ตรวจ `paging.complete` ก่อนสรุป
+4. บอกช่วงวันที่และ `date_basis: "UTC"` เสมอ วันรายงานไม่ใช่ Asia/Bangkok; เวลาแจ้งเตือนอาจเป็น Asia/Bangkok (+07:00) แต่ห้ามเปลี่ยนป้ายวันของ API
+5. สรุปตาม objective เท่านั้น: GAIN_FRIENDS ดู CPF/Friends, WEBSITE_TRAFFIC ดู CTR/CPC, VIDEO_VIEW ดู VTR/CPV, REACH ดู CPM/Reach/Frequency, APP_INSTALL ดู CPI และ CONVERSIONS ดู CV/CPA/ROAS เมื่อมีข้อมูล ห้ามใช้ CV/CPA/ROAS ตัดสิน objective อื่น
 
----
-
-## Phase 1 — Instant Report
-
-ถ้า user ขอ report ตอนนี้:
-
-```
-1. ระบุ level: CAMPAIGN / ADGROUP / AD
-2. ระบุ date range หรือใช้ default:
-   - เมื่อวาน → get_daily_report
-   - 7 วันล่าสุด → get_weekly_report
-3. ถ้ามี campaign_id ให้ส่ง filter
-4. สรุป metrics เป็นภาษาไทย
-5. ถ้ามี status issue ให้ดึง list_ads/get_ad_status เพิ่ม
-```
-
-Output format:
-
-```
-รายงาน LINE Ads — [ช่วงวันที่]
-
-Campaign: [ชื่อ/ID]
-- Spend: ฿[X]
-- Impressions: [X]
-- Clicks/Friends/Conversions: [X]
-- CTR: [X]%
-- CPC/CPF/CPA/CPM: ฿[X]
-- Status: [ACTIVE/PAUSED/IN_REVIEW/etc.]
-
-ประเมิน:
-[ดี/ปานกลาง/ต้องปรับ] — [เหตุผล]
-
-สิ่งที่ควรดูต่อ:
-- [action]
-```
-
-Money safety:
-- Report Agent flag ปัญหาได้
-- ห้ามเปลี่ยน budget/bid เอง
-- ห้ามเสนอเลขใหม่แบบฟันธง ให้ส่งต่อ MODE 4 เพื่อ confirm
-
----
-
-## Phase 2 — Scheduled Report Configuration
-
-ใช้ default + opt-out:
-
-```
-จะตั้งรายงานทุกวัน 09:00 สำหรับ [campaign]
-ใช้ MCP API ดึงข้อมูล ไม่ต้องเปิด Chrome
-
-แจ้งเตือน:
-- Ad ถูก reject / creative in review นาน
-- ไม่มี impression หรือไม่มี result
-- CPF/CPC/CPA สูงกว่า benchmark
-- ใช้งบเร็วหรือช้าเกินไป
-
-ยืนยันแบบนี้ไหมครับ? ถ้าอยากเปลี่ยนเวลา/ความถี่บอกได้เลย
-```
-
-ถ้า user ขอแก้ ให้ถามเฉพาะ:
-- ความถี่
-- campaign scope
-- alert rules
-
----
-
-## Phase 3 — Scheduled Task Prompt Template
-
-### Session Context Capture
-
-ก่อนสร้าง scheduled task หลัง campaign/adset/ad สร้างเสร็จ ให้บันทึก context ลง prompt ทันทีเพื่อไม่ต้องถาม user ใหม่ใน scheduled run:
-
-```
-- ad_account_id
-- campaign_id + campaign name + objective
-- daily_budget (บาท)
-- bid_strategy + bid_amount/cost cap ถ้ามี
-- adset_id/name + targeting summary
-- age range, gender, location, interest codes/interest groups
-- ad_id/name + creative status ถ้ามี
-- start date/time + timezone
-- reporting objective metric เช่น Friends, Clicks, Conversions, Views
-```
-
-Prompt สำหรับ scheduled task:
+Summary keys ของ `get_report`: `total_spend`, `total_clicks`, `total_impressions`, `total_cv`, `avg_ctr` (%), `avg_cpc`, `avg_cpm` ค่า `None` เมื่อไม่มีตัวหารให้แสดง “คำนวณไม่ได้” ไม่แทนด้วยศูนย์ ไม่เดา metrics ที่ response ไม่มี
 
 ```text
-คุณคือ LINE Ads Report Agent
-
-ใช้ MCP tools เท่านั้นเป็น default:
-- get_daily_report หรือ get_weekly_report
-- list_campaigns
-- list_adsets
-- list_ads
-- get_ad_status
-
-ห้ามเปิด browser เว้นแต่ MCP API ใช้งานไม่ได้หรือ user ขอ visual dashboard โดยตรง
-
-Campaign Context:
-- Ad Account: [ID]
-- Campaign: [name/id]
-- Objective: [objective]
-- Budget: ฿[X]/วัน
-- Bid strategy/cost cap: [strategy + ฿Y หรือ none]
-- Adsets: [adset_id/name/status]
-- Targeting summary: [age, gender, location, interest codes/groups]
-- Ads: [ad_id/name/review status]
-- Start date/timezone: [YYYY-MM-DD HH:mm +07:00]
-- Primary metric: [Friends/Clicks/Conversions/Views]
-
-งาน:
-1. ดึง report ตาม schedule
-2. ดึง status ของ campaign/adset/ad ที่เกี่ยวข้อง
-3. สรุปผลเป็นภาษาไทยแบบ compact
-4. แจ้ง alert ถ้าเข้าเงื่อนไข
-5. ห้ามเปลี่ยน budget/bid/status เอง
-
-Alert Rules:
-- Impressions = 0 → ไม่ deliver
-- Result = 0 และ Impressions > 0 → creative/bid/targeting อาจมีปัญหา
-- Creative review rejected → แปล reason และเสนอวิธีแก้
-- Campaign/adset paused → แจ้งว่าไม่ delivery เพราะ paused
-- CPF/CPC/CPA สูงกว่า benchmark → flag ให้เข้า MODE 4
-
-Output:
-รายงาน LINE Ads — [date]
-- Spend
-- Impressions
-- Results
-- CTR/CPC/CPF/CPM ตาม objective
-- Status + reasons
-- Assessment
-- Suggested next step
+รายงาน LINE Ads — [start_date ถึง end_date, UTC]
+- Campaign: [ชื่อ/ID] | Objective: [objective]
+- ใช้จ่าย: [ค่าจริง + สกุลเงิน] | Impressions: [ค่าจริง]
+- ผลลัพธ์และต้นทุนตาม objective: [ค่าที่มีจริง]
+- ความครบถ้วน: [paging.complete / ข้อจำกัดข้อมูล]
 ```
 
----
+Read-only เรียกได้เลย หาก user ขอวิเคราะห์เพิ่ม ค่อยใช้ benchmark และ `get_entity`/`get_ad_status(ad_id)` ด้วย exact ID; `NOT_APPROVED` คือ review rejected ข้อมูลน้อยให้บอกข้อจำกัด ไม่ปรับเอง
 
-## Phase 4 — Confirmation to User
+## Phase 2 — ตั้ง Schedule
 
+ใช้ **Cowork Schedule tab** (บาง UI ใช้ชื่อ Scheduled) หรือ **`/schedule`** ไม่มี scheduler MCP tool และไม่ใช้ cron ให้ AI เตรียม prompt/เวลาในแชทแล้วสร้างผ่านความสามารถ Schedule ที่มีจริง หากไม่มีสิทธิ์/เข้า UI ไม่ได้ ให้แสดง prompt และบอกว่ายังไม่ได้ตั้ง ห้ามอ้างว่าตั้งสำเร็จ
+
+งานที่ต้องใช้ local files/apps รวมถึงการเก็บ CSV บนเครื่อง **รันเฉพาะเครื่อง local** ต้องให้เครื่องและ local runtime พร้อมใช้งาน อย่าสัญญาว่าจะรันบน cloud เมื่อปิดเครื่อง อ้างอิง [Schedule recurring tasks in Claude Cowork](https://support.claude.com/en/articles/13854387)
+
+ก่อนตั้ง ให้สรุปและขอ “ยืนยัน”:
+
+- ชื่อ task, เวลา/ความถี่ + timezone ของ schedule เช่น 09:00 Asia/Bangkok (ตัวอย่างสมมติ), campaign scope
+- owner cap ที่ผู้ใช้บอก พร้อมช่วงวันที่ UTC และ `period_end` ถ้าต้องการ projection; ถ้ายังไม่มีให้ถามก่อนตั้ง cap alert
+- เก็บประวัติหรือไม่: เป็น optional เฉพาะ scheduled task บทนี้ ถ้าเลือก ให้ใช้ `workspace_dir` ที่ได้รับสิทธิ์ AI สร้าง/ดูแลไฟล์เอง ไม่ให้ผู้อ่านเตรียม CSV
+
+CSV เป็น write: ก่อนเปิดใช้ ทำ `sync_ad_daily_csv(..., dry_run=True)` สรุป path/ช่วงวันที่/การ upsert แล้วรอ “ยืนยัน” ให้ชัดว่าครอบคลุมการ sync ทุก run ตามขอบเขตนี้ จึงตั้ง prompt ให้ `dry_run=False` ได้ หากเปลี่ยน path/scope ต้อง dry-run และขอยืนยันใหม่ ไม่มี approval นี้ให้ข้ามการ sync
+
+## Phase 3 — Scheduled-task Prompt
+
+AI เติมช่องว่างจากข้อมูลบัญชีและคำตอบที่ยืนยันแล้วในแชท ไม่ให้ผู้อ่านสร้างไฟล์ prompt ระบุสูตรช่วงวันที่ให้คำนวณใหม่ทุก run ไม่ตรึงวันที่ตัวอย่างไว้
+
+```text
+คุณคือ LINE Ads Report Agent ใช้ MCP ดึงข้อมูลเอง ห้ามเดาข้อมูลหรือเงิน
+
+Context ที่ยืนยันแล้ว:
+- บัญชี: [account ID] | Campaign scope: [ID หรือทั้งบัญชี]
+- Objective: [จากบัญชี; refresh เมื่อจำเป็น]
+- Schedule: [ความถี่/เวลา/timezone]
+- Report window: [เมื่อวาน UTC หรือสูตรช่วงวันที่ UTC ที่ตกลง]
+- Owner cap: [จำนวน + สกุลเงินจากผู้ใช้]
+- Cap window: [สูตร start_date/end_date UTC ที่ cap ครอบคลุม]
+- period_end: [วันที่ UTC ที่ตกลงสำหรับ projection หรือไม่ส่ง]
+- CSV history: [ปิด หรือเปิดพร้อม workspace_dir ที่ได้รับสิทธิ์]
+- CSV approval: [ขอบเขต/การอนุมัติ sync แบบเกิดซ้ำ หรือยังไม่ได้อนุมัติ]
+
+ทุก run ทำตามลำดับ:
+1. คำนวณวันที่ UTC ของ run นี้ ใช้ get_daily_report สำหรับเมื่อวาน (AD เป็น default)
+   หรือ get_report(level="AD", start_date=..., end_date=..., fetch_all=True, by_day=True)
+   ตามขอบเขตที่ตกลง; กรอง campaign_id เมื่อกำหนด แบ่งคำขอไม่เกิน 93 วัน
+2. ตรวจ paging.complete และ date_basis="UTC" สรุปสั้นเป็นไทย:
+   ช่วงวันที่ UTC, scope, spend, impressions, clicks และผลลัพธ์/ต้นทุนตาม objective
+   None = คำนวณไม่ได้; ข้อมูลไม่ครบให้บอก ห้ามใช้ CV/CPA/ROAS กับ objective อื่น
+3. เรียก check_spend_cap(cap_amount=[owner cap], start_date=[cap start],
+   end_date=[cap end], campaign_id=[ถ้ากรอง], period_end=[ถ้าตกลง])
+   - status="exceeded": แจ้งเตือนใช้จ่ายเกิน cap พร้อม spend/cap/ส่วนเกินจริง
+   - status="within_cap": สรุปตามปกติ ไม่แจ้งเตือน; spend เท่ากับ cap ไม่ถือว่าเกิน
+   - status="indeterminate": บอกว่าข้อมูลไม่ครบ ยังยืนยันการเกิน cap ไม่ได้
+   แสดง per-campaign spend/optional projection ตาม response เท่านั้น
+   projection ไม่ใช่ยอดจริงและไม่ใช้เป็นเหตุแจ้งเตือนเพิ่ม
+4. ถ้า CSV history เปิดและมี recurring approval ครบแล้ว จึงเรียก
+   sync_ad_daily_csv(start_date=[report start], end_date=[report end],
+   workspace_dir=[approved path], campaign_id=[ถ้ากรอง], dry_run=False)
+   รายงานผล sync พร้อม readback/readback_ok ที่คืนมา ตรวจผลบันทึกก่อนบอกว่าสำเร็จ
+   ถ้าอ่านกลับไม่ได้หรือ sync ล้มเหลวให้บอกตรง ๆ ว่ายังยืนยันการเก็บไม่ได้
+
+แจ้งเตือนเฉพาะ check_spend_cap status exceeded เท่านั้น ไม่มี alerts เรื่อง benchmark,
+creative rejection, delivery, result=0 หรือ pace ใน task นี้
+ห้าม pause/resume/update/create โฆษณาอัตโนมัติ แม้เกิน cap
+ห้ามเขียนไฟล์อื่นหรือขอให้ผู้อ่านเตรียม/แนบไฟล์
 ```
-ตั้ง Schedule เรียบร้อยครับ
 
-- ความถี่: [daily/weekly/custom]
-- เวลา: [HH:mm]
-- Campaign: [name/id]
-- Data source: MCP API
-- Browser required: ไม่ต้องใช้ เว้นแต่ API error
-```
+`check_spend_cap` อ่านอย่างเดียว: spend > cap เท่านั้นคือ exceeded ไม่ pause เอง; ถ้าข้อมูลไม่ครบเป็น indeterminate ไม่อนุมานว่าอยู่ใน cap
 
----
+`sync_ad_daily_csv` upsert `line-ads-data/ad_daily.csv` ด้วย key `date+ad_id` (16 columns: date, account_timezone, campaign_id, campaign_name, objective, adgroup_id, adgroup_name, ad_id, ad_name, impressions, clicks, spend, currency, results, result_type, pulled_at) และบันทึก `run_log.csv`; ผู้อ่านไม่ต้องสร้างไฟล์ก่อน
+
+## Phase 4 — ตรวจ Schedule และจัดการต่อ
+
+แจ้ง “ตั้งแล้ว” เฉพาะเมื่อ Schedule ยืนยันสำเร็จ พร้อมชื่อ task, เวลา/timezone, scope, owner cap/ช่วง cap, วันที่ข้อมูลเป็น UTC, CSV เปิด/ปิด และข้อจำกัด local หากมี ตรวจ run แรกจากผลจริง ไม่อ้างว่าได้รายงานก่อนรัน
+
+จัดการ pause/resume/edit/delete/run now ที่ Schedule tab หรือ `/schedule` ตามสิ่งที่ UI รองรับ การหยุด task รายงานไม่ใช่การ pause โฆษณา ถ้าอยากปรับโฆษณาจากผล ให้ไป MODE 4
 
 ## Error Handling
 
-| Error | Action |
-|---|---|
-| Missing credentials | แจ้งให้ตั้ง `.env` |
-| 401 | ตรวจ Access Key/Secret/signature |
-| 403 | แจ้ง permission/feature อาจไม่เปิด |
-| 404 | ตรวจ campaign/adset/ad id |
-| 429 | retry ตาม client แล้วแจ้งถ้ายัง rate limit |
-| 5xx | แจ้ง LINE API ชั่วคราว |
-| ไม่มีข้อมูล | บอกว่า campaign ยังไม่ run/ยัง review/ช่วงวันที่ไม่มี delivery |
-
-Browser fallback ใช้เมื่อ:
-- user ต้องการดู chart/visual จริง
-- API response ไม่พอสำหรับ diagnosis
-- ต้องแก้ account/login/payment
-
----
-
-## Benchmarks
-
-โหลด `knowledge/kpi-benchmarks.md` เฉพาะตอนต้องวิเคราะห์ performance
-
-หลักคิด:
-- Campaign อายุ < 7 วัน ให้บอกว่า data ยัง limited
-- หลัง 14 วัน ค่อยเสนอ weekly report ถ้า stable
-- การเปลี่ยนเงินหรือสถานะต้องไป MODE 4
-
----
-
-## Manage Schedule
-
-```
-"หยุดรายงานชั่วคราว"   → pause schedule
-"เปลี่ยนเป็นทุกสัปดาห์"  → update schedule
-"ยกเลิกรายงานอัตโนมัติ" → delete schedule
-"รายงานตอนนี้เลย"      → run instant report ผ่าน MCP
-```
-
----
-
-## Notes
-
-1. MCP report tools เป็น default
-2. Read-only ไม่ต้อง confirm
-3. ห้ามแก้เงิน/status จาก MODE 3
-4. Browser เป็น fallback เท่านั้น
-5. Report ต้องบอก status reasons เช่น `CAMPAIGN_PAUSED`, `ADGROUP_PAUSED`, `CREATIVE_REVIEW_IN_REVIEW`
-
----
-
-*Version 3.0 | May 2026*
-*Updated: MCP-first reporting, scheduled MCP prompt, browser fallback scope*
+- API error/permission/rate limit: แจ้งข้อผิดพลาดจริง ไม่อ้างยอดศูนย์หรือสรุปว่ายังอยู่ใน cap
+- `paging.complete=false` หรือข้อมูลขาด: สรุปข้อจำกัด; cap indeterminate ต้องบอกว่ายังตรวจไม่ได้
+- CSV write ไม่สำเร็จ: แยกผลรายงานกับผลบันทึก ไม่ให้ผู้อ่านเตรียมไฟล์แทน
+- Schedule/local runtime ไม่พร้อม: บอกว่ายังรันไม่ได้ ตรวจสถานะผ่าน Schedule ไม่สัญญาว่าจะ catch up โดยไม่มีผลยืนยัน

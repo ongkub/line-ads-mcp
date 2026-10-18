@@ -71,7 +71,7 @@ App behavior = แอปที่คนใช้จริงบนมือถ�
 - อย่าติ๊กทุก interest ที่ "ดูเกี่ยวข้องกับบ้าน" ไว้กลุ่มเดียว (เช่น บ้านและสวน + อสังหา + รถยนต์ + ครอบครัว + ท่องเที่ยว รวมกัน) — นั่นคือการกอง Interest ไม่ใช่การสร้าง Audience
 - อย่าใส่ชั้นละ 1–2 code แล้ว intersect — ชั้นจะบางเกินจนไม่สะท้อนกลุ่มจริง และ audience แคบเกินโดยไม่จำเป็น ให้ไล่หา signal เสริมจาก detail files (Interest + OA follower + OpenChat + LINE TODAY + purchase power) จนครบชั้นละอย่างน้อย 3 codes
 
-**คำเตือนเรื่องขนาด:** อย่าแคบจนเหลือ audience หลักหมื่นด้วยความเชื่อว่ายิ่งแคบยิ่งแม่น — เช็คกับสูตร `Audience Size ≈ Budget ÷ CPM × 5,000` และ `get_adset_audience_size` ก่อนสรุปแผน (ดู Audience Size Check ใน `workflows/02-campaign.md`)
+**คำเตือนเรื่องขนาด:** อย่าเชื่อว่ายิ่งแคบยิ่งแม่น — อาจใช้ `estimate_adset_reach` ก่อนสร้าง ad set เพื่อดู reach และ click ช่วง min–max จากงบ/bid/targeting ที่ผู้ใช้ระบุ เป็นค่าประมาณ ไม่ใช่ขนาด audience จริงหรือผลรับประกัน; ถ้าข้อมูลขาด/invalid ให้แจ้ง ไม่เดาตัวเลข (ดู Reach Estimate ใน `workflows/02-campaign.md`)
 
 ## Common Business Mapping
 

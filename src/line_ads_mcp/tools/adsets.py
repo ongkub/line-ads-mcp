@@ -7,8 +7,11 @@ from typing import Any
 from line_ads_mcp.client import LineAdsAPIError, LineAdsClient, LineAdsConfig, resolve_ad_account_id
 
 from .common import clean_dict, dry_run_response, handle_tool_error, ok, require_one_of, to_micro
+from .paging import fetch_all_pages
+from .change_log import track_change, write_entity
 
 STATUSES = {"ACTIVE", "PAUSED"}
+ADSET_STATUS_FILTER = {"ACTIVE", "PAUSED", "REMOVED"}
 BID_TYPES = {"CPF", "CPM", "CPC", "CPV"}
 BID_STRATEGIES = {"COST_CAP", "LOWEST_COST"}
 TARGETING_MODES = {"AUTO", "MANUAL"}
@@ -143,17 +146,48 @@ def _build_targeting(
     return targeting
 
 
-async def list_adsets(campaign_id: str, ad_account_id: str | None = None) -> dict[str, Any]:
+async def list_adsets(
+    campaign_id: str | None = None,
+    ad_account_id: str | None = None,
+    status: str | None = None,
+    fetch_all: bool = True,
+    page: int = 1,
+    size: int = 100,
+) -> dict[str, Any]:
     try:
+        if status is not None:
+            require_one_of(status, ADSET_STATUS_FILTER, "status")
         config = LineAdsConfig.from_env()
         account_id = resolve_ad_account_id(ad_account_id, config)
+        path = f"/adaccounts/{account_id}/adgroups"
+        params: dict[str, Any] = {}
+        if campaign_id is not None:
+            params["campaignId"] = campaign_id
+        if status == "REMOVED":
+            params["includeRemoved"] = "true"
+
         async with LineAdsClient(config) as client:
-            data = await client.get(f"/adaccounts/{account_id}/adgroups", params={"campaignId": campaign_id})
-        return ok(data)
+            if fetch_all:
+                result = await fetch_all_pages(client, path, params=params, page_size=size)
+                datas = result.get("datas", [])
+                paging = result.get("paging", {})
+            else:
+                p = dict(params)
+                p["page"] = page
+                p["size"] = size
+                data = await client.get(path, params=p)
+                datas = data.get("datas", []) if isinstance(data, dict) else []
+                paging = data.get("paging", {}) if isinstance(data, dict) else {}
+
+        if status is not None:
+            datas = [row for row in datas if isinstance(row, dict) and row.get("configuredStatus") == status]
+
+        return ok({"datas": datas, "paging": paging, "status_filter": status})
     except Exception as error:
         return handle_tool_error(error)
 
 
+@track_change("adset")
 async def create_adset(
     campaign_id: str,
     name: str,
@@ -176,6 +210,8 @@ async def create_adset(
     start_date: str | None = None,
     end_date: str | None = None,
     dry_run: bool = True,
+    status: str = "PAUSED",
+    workspace_dir: str | None = None,
 ) -> dict[str, Any]:
     """Create an adset with verified payload structure.
 
@@ -188,6 +224,7 @@ async def create_adset(
     - bid_amount required only when bid_strategy=COST_CAP
     """
     try:
+        require_one_of(status, {"PAUSED", "ACTIVE"}, "status")
         require_one_of(bid_type, BID_TYPES, "bid_type")
         require_one_of(bid_strategy, BID_STRATEGIES, "bid_strategy")
         require_one_of(auto_bid_type, AUTO_BID_TYPES, "auto_bid_type")
@@ -212,6 +249,7 @@ async def create_adset(
         payload = clean_dict({
             "campaignId": campaign_id,
             "name": name,
+            "configuredStatus": status,
             "bidType": bid_type,
             "bidStrategy": bid_strategy,
             "autoBidType": auto_bid_type,
@@ -224,13 +262,12 @@ async def create_adset(
         endpoint = f"/adaccounts/{account_id}/adgroups"
         if dry_run:
             return dry_run_response("create_adset", endpoint, payload)
-        async with LineAdsClient(config) as client:
-            data = await client.post(endpoint, payload)
-        return ok(data)
+        return await write_entity(config, account_id, "adset", endpoint, payload)
     except Exception as error:
         return handle_tool_error(error)
 
 
+@track_change("adset", "adset_id")
 async def update_adset(
     adset_id: str,
     ad_account_id: str | None = None,
@@ -249,9 +286,10 @@ async def update_adset(
     excluded_audience_ids: list[str] | None = None,
     custom_audience_ids: list[str] | None = None,
     dry_run: bool = True,
+    workspace_dir: str | None = None,
 ) -> dict[str, Any]:
     try:
-        if status:
+        if status is not None:
             require_one_of(status, STATUSES, "status")
         config = LineAdsConfig.from_env()
         account_id = resolve_ad_account_id(ad_account_id, config)
@@ -290,24 +328,26 @@ async def update_adset(
         endpoint = f"/adaccounts/{account_id}/adgroups/{adset_id}"
         if dry_run:
             return dry_run_response("update_adset", endpoint, payload)
-        async with LineAdsClient(config) as client:
-            data = await client.post(endpoint, payload)
-        return ok(data)
+        return await write_entity(config, account_id, "adset", endpoint, payload, adset_id)
     except Exception as error:
         return handle_tool_error(error)
 
 
+@track_change("adset", "adset_id")
 async def pause_adset(
     adset_id: str,
     ad_account_id: str | None = None,
     dry_run: bool = True,
+    workspace_dir: str | None = None,
 ) -> dict[str, Any]:
-    return await update_adset(adset_id, ad_account_id, status="PAUSED", dry_run=dry_run)
+    return await update_adset(adset_id, ad_account_id, status="PAUSED", dry_run=dry_run, workspace_dir=workspace_dir)
 
 
+@track_change("adset", "adset_id")
 async def resume_adset(
     adset_id: str,
     ad_account_id: str | None = None,
     dry_run: bool = True,
+    workspace_dir: str | None = None,
 ) -> dict[str, Any]:
-    return await update_adset(adset_id, ad_account_id, status="ACTIVE", dry_run=dry_run)
+    return await update_adset(adset_id, ad_account_id, status="ACTIVE", dry_run=dry_run, workspace_dir=workspace_dir)

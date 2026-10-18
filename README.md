@@ -461,49 +461,75 @@ line-ads-mcp
 
 - ไม่มี delete tools
 - write tools ตั้ง `dry_run=true` เป็นค่าเริ่มต้น
-- budget/bid changes ต้องให้ assistant ขอ user confirm ก่อนเรียก `dry_run=false`
+- ทุก write ต้อง dry-run → สรุปตัวเลข → ผู้ใช้พิมพ์ “ยืนยัน” → `dry_run=false` → ตรวจ readback
 - credentials อ่านจาก env เท่านั้น ไม่ hardcode ในโค้ด
 - error message ส่งกลับเป็นภาษาไทยเพื่อให้ assistant ส่งต่อ user ได้ทันที
 
 ## Tool Status
 
-### ✅ Read-ready (smoke test ผ่านกับ API จริง)
+รายการต่อไปนี้อธิบาย contract หลังอัปเกรด ไม่ได้ยืนยันว่าทุก feature เปิดใช้ได้กับทุกบัญชี; permission/API response ต้องตรวจจากบัญชีจริง
 
-| Tool | หมายเหตุ |
+### Read tools — อ่านทั้งบัญชีและทุกหน้า
+
+| Tool / parameters | พฤติกรรม |
 |---|---|
-| `list_campaigns` | ✅ |
-| `list_adsets` | ✅ |
-| `list_ads` | ✅ |
-| `get_ad_status` | ✅ |
-| `get_report` / `get_daily_report` / `get_weekly_report` | ✅ |
-| `list_audiences` | ✅ |
-| `list_advanced_targeting_codes` | ✅ ใช้หา official interest/behavior/status codes |
+| `list_campaigns(status=None, fetch_all=True)` | ทุก campaign; กรอง ACTIVE/PAUSED/REMOVED |
+| `list_adsets(campaign_id=None, status=None, fetch_all=True)` | ทั้งบัญชีหรือเฉพาะ campaign; status filter เดียวกัน |
+| `list_ads(adset_id=None, campaign_id=None, status=None, fetch_all=True)` | ทั้งบัญชีหรือกรอง parent; status filter เดียวกัน |
+| `get_entity(entity_type="campaign"\|"adset"\|"ad", entity_id=...)` | exact entity: configured_status, delivery_status, budget, bid, targeting, raw |
+| `get_ad_status(ad_id)` | exact-ID safe; ตรวจ review/delivery; `NOT_APPROVED` = review rejected |
+| `get_report(level="CAMPAIGN"\|"ADGROUP"\|"AD", start_date=..., end_date=..., campaign_id=None, adgroup_id=None, fetch_all=True, by_day=False)` | ทุกหน้า; `by_day=True` = หนึ่งแถวต่อวัน×entity สูงสุด 93 วัน/คำขอ |
+| `get_daily_report` / `get_weekly_report(by_day=False)` | เมื่อวาน ระดับ AD เป็น default / รายงานสัปดาห์ |
+| `list_audiences` / `list_advanced_targeting_codes` | audience เดิมพร้อม `status`, `estimated_audience_size`, `usable_in_adset` / official interest, behavior, status codes |
+| `estimate_adset_reach(campaign_id, campaign_objective, daily_budget, bid_type, auto_bid_type, targeting=...)` | LINE Adgroup Result Simulator (`simulation/ars`): reach/click min–max เป็นค่าประมาณ ไม่สร้างอะไร ไม่ใช่ขนาด audience จริง/ผลรับประกัน |
+| `check_spend_cap(cap_amount, start_date, end_date, campaign_id=None, period_end=None)` | อ่านอย่างเดียว; per-campaign spend และ optional projection; ไม่ pause เอง |
 
-### ✅ Write-ready (payload ตรง spec + tests ผ่าน — ยังคง dry_run=true โดย default)
+`estimate_adset_reach` รองรับ targeting params แบบ `create_adset` หรือ `targeting` และ optional `adset_id`, `bid_amount`, `bid_strategy`; แจ้ง absent/invalid fields โดยไม่เดาตัวเลขเงิน
 
-| Tool | Budget/Bid | Objective/Status | หมายเหตุ |
-|---|---|---|---|
-| `create_campaign` | `dailyBudgetMicro` / `totalBudgetMicro` (THB × 1M) | `campaignObjective: GAIN_FRIENDS` | ต้องระบุ `start_date` เสมอ เช่น `2026-05-14T09:00:00+07:00` |
-| `update_campaign` | `dailyBudgetMicro` | `configuredStatus` | |
-| `pause_campaign` / `resume_campaign` | — | `configuredStatus: PAUSED/ACTIVE` | |
-| `create_adset` | `dailyBudgetMicro` / `bidAmountMicro` (THB × 1M) | `bidType`, `bidStrategy` required | ✅ สร้างจริงด้วย `dry_run=false` สำเร็จแล้ว (MANUAL + interest/behavior layers) — ถ้ามี `interest_codes`/`interest_groups`/`behavior_codes` จะใช้ `targetingMode=MANUAL` + `includeAdvancedTargetings` |
-| `update_adset` | `dailyBudgetMicro` / `bidAmountMicro` | `configuredStatus` | |
-| `pause_adset` / `resume_adset` | — | `configuredStatus: PAUSED/ACTIVE` | |
+รายงานคืน `paging.complete` (true/false) และ `date_basis: "UTC"` ต้องตรวจความครบถ้วนก่อนสรุป วันรายงานเป็น UTC; summary keys คือ `total_spend`, `total_clicks`, `total_impressions`, `total_cv`, `avg_ctr` (%), `avg_cpc`, `avg_cpm` ค่าเฉลี่ยเป็น `None` เมื่อไม่มีตัวหาร ไม่ใช้ CV/CPA/ROAS วิเคราะห์ objective ที่ไม่ใช่ CONVERSIONS
 
-### ✅ Write-ready — payload verified จาก real API response + error probing
+Cap ใช้เลขและช่วงวันที่ที่เจ้าของระบุเท่านั้น: `exceeded` เมื่อ spend > cap อย่างเคร่งครัด, เท่ากับ cap ยังเป็น `within_cap`, `indeterminate` เมื่อข้อมูลไม่ครบต้องบอกว่ายังสรุปไม่ได้ ไม่ auto-pause
 
-| Tool | หมายเหตุ |
+### Write tools — dry-run → สรุป → “ยืนยัน” → execute → readback
+
+| Tool | Contract / ข้อควรตรวจ |
 |---|---|
-| `create_ad` | creative เป็น nested object; ใช้ `imageHash` (จาก upload_media), `title`, `callToAction.type`; `title`/`description` ไม่เกิน 20 ตัวอักษร |
-| `upload_media` | endpoint `/media/upload`; ต้องส่ง `mediaType: IMAGE\|VIDEO`; signing ใช้ `"multipart/form-data"` |
+| `create_campaign` | `status="PAUSED"` default; objective enum, งบจาก user และต้องมี `start_date` |
+| `create_adset` | `status="PAUSED"` default; งบ/bid เป็น THB; interest/behavior targeting ใช้ official codes |
+| `upload_media` | อัปโหลดรูป/วิดีโอเพื่อรับ imageHash; เป็น write ต้อง dry-run + “ยืนยัน” |
+| `create_ad` | `status="PAUSED"` default; nested creative, imageHash จาก upload, title/description ไม่เกิน 20 ตัวอักษร |
+| `update_campaign` / `update_adset` | แก้ budget/bid/targeting/status ตาม fields ที่ tool รองรับ; ห้ามเดาเงิน |
+| `pause_campaign` / `resume_campaign` | PAUSED / ACTIVE หลัง approval ใหม่ |
+| `pause_adset` / `resume_adset` | PAUSED / ACTIVE หลัง approval ใหม่ |
+| `pause_ad(ad_id, dry_run=True)` / `resume_ad(ad_id, dry_run=True)` | หยุด/เปิด ad ด้วย exact ID หลัง approval ใหม่ |
+| `create_audience(name, function_type, config, dry_run=True, workspace_dir=None)` | `LOOKALIKE` (source audience + size ratio), `APP_EVENT`, `WEBTRAFFIC` (LINE Tag, retentionDays 1–180), `ACCOUNT_FRIENDS` (OA), `VIDEO_VIEW`, `IMAGE_CLICK` (ผู้มีส่วนร่วมกับโฆษณาที่ผ่านมา); ต้องมีสิทธิ์ Custom Audience |
+| `sync_ad_daily_csv(start_date, end_date, workspace_dir, campaign_id=None, dry_run=True)` | optional history เฉพาะ scheduled task บทที่ 2; upsert ด้วย key date+ad_id และบันทึก run log |
 
-### ⚠️ Dry-run only (403 permissions — โค้ดถูก แต่ account ยังไม่ได้เปิด feature)
+Audience: MODE 2 เลือกหรือสร้างฐานหลัง Customer Avatar Gate ก่อนสร้าง ad set ได้; MODE 6 ให้คำแนะนำเท่านั้น ส่งต่อ MODE 2 ในแชทเดิมเมื่อจะสร้าง ไม่เรียก create_audience/create_adset เอง ทุก write ต้อง dry-run → สรุป → “ยืนยัน” → execute → readback ฐานใหม่เริ่ม `IN_PROGRESS` ต้อง re-check `list_audiences` และใช้ใน ad set เฉพาะ `status="READY"` / `usable_in_adset=true` ส่ง `custom_audience_ids` / `excluded_audience_ids` ชุดเดียวกันให้ create_adset และ estimate_adset_reach; GAIN_FRIENDS ยังต้องยกเว้น active friends audience ที่พร้อมใช้
 
-| Tool | สถานะ |
+ขนาดฐานเดิมใช้ `estimated_audience_size`: `"-"` = เล็กเกินรายงาน, `"100 or fewer"` = ไม่เกิน 100 คน; ฐานใหม่ยังไม่ทราบขนาดจน LINE สร้างเสร็จ ถ้ายังไม่ READY ถามว่าจะรอหรือสร้าง ad set โดยไม่ใช้ฐานใหม่นี้ ไม่ข้าม friend exclusion ที่จำเป็น Customer-list upload (hashed phone/email) ไม่รองรับผ่าน MCP ให้ผู้ใช้ทำเองใน LINE Ads Manager ไม่ขอไฟล์ลูกค้า
+
+ทุก real write (`dry_run=False`) คืน `readback`, `readback_ok`; update/pause/resume คืน `before` snapshot ด้วย ต้องตรวจแล้วแสดงผลหลังทำ หาก readback ไม่ตรง/ไม่ครบ ห้ามอ้างว่าสำเร็จ ตรวจ `get_entity` / `get_ad_status` ก่อน retry การสร้างจบที่ PAUSED; `resume_*` เป็น approval แยก ไม่ถือว่าอนุมัติพร้อมการสร้าง
+
+Write tools รับ optional `workspace_dir` (fallback env `LINE_ADS_WORKSPACE_DIR`) เพื่อ append before/after/time ใน `line-ads-data/change_log.jsonl` ต้องให้สิทธิ์ path ที่ใช้จริง ไม่ตั้ง path อย่าอ้างว่ามี log
+
+`sync_ad_daily_csv` ต้องระบุ `workspace_dir` ตาม signature; AI จัดการ `line-ads-data/ad_daily.csv` (16 columns: date, account_timezone, campaign_id, campaign_name, objective, adgroup_id, adgroup_name, ad_id, ad_name, impressions, clicks, spend, currency, results, result_type, pulled_at) และ `run_log.csv` เอง ผู้อ่านไม่ต้องเตรียม/แนบ/เขียนไฟล์ ยกเว้นรูป creative ก่อน sync จริงต้อง dry-run และ “ยืนยัน”; การตั้ง sync ทุก run ต้องยืนยันขอบเขต recurring write ไว้ใน task
+
+### Workflows 01–07
+
+เริ่มด้วยแชทประโยคเดียว AI ดึงข้อมูลบัญชีผ่าน MCP แล้วถามทีละเรื่องเฉพาะสิ่งที่บัญชีตอบไม่ได้ เช่น เป้าหมายธุรกิจ งบ/cap วันเริ่ม ข้อเท็จจริงสินค้า และ approval ตัวเลขตัวอย่างต้องระบุ “(ตัวอย่างสมมติ)” ไม่ใช้แทนเงินจริง
+
+| Workflow | งาน |
 |---|---|
-| `create_audience` | API ตอบ 403 ทุก type — ต้องเปิด Custom Audience feature ใน LINE Ads Manager ก่อน |
+| [01-account-setup](workflows/01-account-setup.md) | เปิดบัญชี/KYC; sensitive fields ให้ user กรอกเอง |
+| [02-campaign](workflows/02-campaign.md) | บทที่ 1: campaign → ad set → upload → ad เป็น PAUSED พร้อมตรวจ readback |
+| [03-report-schedule](workflows/03-report-schedule.md) | บทที่ 2: report → summary → cap exceeded alert → optional CSV history |
+| [04-optimize](workflows/04-optimize.md) | บทที่ 3: ดึง ACTIVE/report → diagnose → เสนอ → before/dry-run/ยืนยัน/execute → after/log/follow-up |
+| [05-dashboard](workflows/05-dashboard.md) | บทที่ 4: Claude สร้าง Artifact จาก MCP; ไม่มี dashboard tool |
+| [06-audience-advisor](workflows/06-audience-advisor.md) | บทที่ 5: แนะนำ audience จากประวัติ อ่านอย่างเดียว ไม่สร้าง audience |
+| [07-campaign-planner](workflows/07-campaign-planner.md) | บทที่ 6: วางแผนจากประวัติ ส่งต่อบทที่ 1 ถ้าจะสร้างจริง |
 
-> ข้อจำกัดนี้กระทบเฉพาะการ **สร้าง** Custom Audience ใหม่ (upload รายชื่อลูกค้า, Lookalike) เท่านั้น — การอ่าน (`list_audiences`) และการใช้ audience ที่มีอยู่แล้วใน `create_adset` (`custom_audience_ids` / `excluded_audience_ids`) ทำงานปกติ
+ไม่มี scheduler MCP tool: ใช้ Cowork Schedule tab หรือ `/schedule` ไม่ใช้ cron งานที่ต้องใช้ local files/apps รันเฉพาะเครื่อง local ตาม [คู่มือ Cowork Schedule](https://support.claude.com/en/articles/13854387) Scheduled task แจ้งเตือนเฉพาะ `check_spend_cap.status="exceeded"`; benchmark/creative/delivery analysis ใช้เมื่อต้องการวิเคราะห์ทันที ไม่ใส่เป็น alerts อื่นใน task
 
 ## Budget & Bid Units
 

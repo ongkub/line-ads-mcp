@@ -9,6 +9,11 @@ from typing import Any
 from line_ads_mcp.client import LineAdsAPIError, LineAdsClient, LineAdsConfig, resolve_ad_account_id
 
 from .common import clean_dict, dry_run_response, handle_tool_error, ok, require_one_of
+from .entities import get_entity
+from .paging import fetch_all_pages
+from .change_log import track_change, write_entity, set_change_context
+
+AD_STATUS_FILTER = {"ACTIVE", "PAUSED", "DRAFT", "REMOVED"}
 
 # Verified from real API data: callToAction is nested {"type": "ADD_FRIEND"} inside creative
 CALL_TO_ACTIONS = {"ADD_FRIEND", "LEARN_MORE", "SHOP_NOW", "SIGN_UP", "CONTACT_US", "DOWNLOAD"}
@@ -52,10 +57,12 @@ def _validate_media(file_path: str) -> tuple[Path, str, str]:
     return path, mime_type, media_type
 
 
+@track_change("media")
 async def upload_media(
     file_path: str,
     ad_account_id: str | None = None,
     dry_run: bool = True,
+    workspace_dir: str | None = None,
 ) -> dict[str, Any]:
     """Upload image or video. Returns imageHash (used in create_ad).
 
@@ -71,6 +78,7 @@ async def upload_media(
         payload = {"file_path": str(path), "mime_type": mime_type, "media_type": media_type, "size_bytes": path.stat().st_size}
         if dry_run:
             return dry_run_response("upload_media", endpoint, payload)
+        set_change_context(ad_account_id=account_id, endpoint=endpoint, payload=payload)
         async with LineAdsClient(config) as client:
             with path.open("rb") as fh:
                 data = await client.request(
@@ -81,11 +89,13 @@ async def upload_media(
                         "mediaType": (None, media_type),
                     },
                 )
+        set_change_context(entity_id=data.get("id") if isinstance(data, dict) else None)
         return ok(data)
     except Exception as error:
         return handle_tool_error(error)
 
 
+@track_change("ad")
 async def create_ad(
     adset_id: str,
     name: str,
@@ -100,6 +110,8 @@ async def create_ad(
     destination_url: str | None = None,
     small_image_hash: str | None = None,
     dry_run: bool = True,
+    status: str = "PAUSED",
+    workspace_dir: str | None = None,
 ) -> dict[str, Any]:
     """Create an ad with verified payload structure.
 
@@ -114,6 +126,7 @@ async def create_ad(
     - campaignId + configuredStatus + smallDelivery ต้องส่งด้วยตาม API spec
     """
     try:
+        require_one_of(status, {"PAUSED", "ACTIVE"}, "status")
         require_one_of(call_to_action, CALL_TO_ACTIONS, "call_to_action")
         require_one_of(creative_format, CREATIVE_FORMATS, "creative_format")
         _validate_ad_text(title, "title")
@@ -139,39 +152,117 @@ async def create_ad(
             "campaignId": campaign_id,
             "adgroupId": adset_id,
             "name": name,
-            "configuredStatus": "ACTIVE",
+            "configuredStatus": status,
             "smallDelivery": False,
             "creative": creative,
         })
         endpoint = f"/adaccounts/{account_id}/ads"
         if dry_run:
             return dry_run_response("create_ad", endpoint, payload)
-        async with LineAdsClient(config) as client:
-            data = await client.post(endpoint, payload)
-        return ok(data)
+        return await write_entity(config, account_id, "ad", endpoint, payload)
     except Exception as error:
         return handle_tool_error(error)
 
 
 async def get_ad_status(ad_id: str, ad_account_id: str | None = None) -> dict[str, Any]:
     try:
-        config = LineAdsConfig.from_env()
-        account_id = resolve_ad_account_id(ad_account_id, config)
-        async with LineAdsClient(config) as client:
-            data = await client.get(f"/adaccounts/{account_id}/ads", params={"ids": ad_id})
-        if isinstance(data, dict) and isinstance(data.get("datas"), list) and data["datas"]:
-            return ok(data["datas"][0])
+        res = await get_entity("ad", ad_id, ad_account_id=ad_account_id)
+        if not res.get("ok"):
+            return res
+        entity_info = res.get("data", {})
+        raw = dict(entity_info.get("raw") or {})
+        if str(raw.get("id")) != str(ad_id):
+            return {
+                "ok": False,
+                "status_code": 404,
+                "error_code": "NOT_FOUND",
+                "message": f"ไม่พบ ad ID: {ad_id}",
+            }
+        data = dict(raw)
+        data["configured_status"] = entity_info.get("configured_status")
+        data["delivery_status"] = entity_info.get("delivery_status")
         return ok(data)
     except Exception as error:
         return handle_tool_error(error)
 
 
-async def list_ads(adset_id: str, ad_account_id: str | None = None) -> dict[str, Any]:
+async def list_ads(
+    adset_id: str | None = None,
+    ad_account_id: str | None = None,
+    campaign_id: str | None = None,
+    status: str | None = None,
+    fetch_all: bool = True,
+    page: int = 1,
+    size: int = 100,
+) -> dict[str, Any]:
+    try:
+        if status is not None:
+            require_one_of(status, AD_STATUS_FILTER, "status")
+        config = LineAdsConfig.from_env()
+        account_id = resolve_ad_account_id(ad_account_id, config)
+        path = f"/adaccounts/{account_id}/ads"
+        params: dict[str, Any] = {}
+        if adset_id is not None:
+            params["adgroupId"] = adset_id
+        if campaign_id is not None:
+            params["campaignId"] = campaign_id
+        if status == "REMOVED":
+            params["includeRemoved"] = "true"
+
+        async with LineAdsClient(config) as client:
+            if fetch_all:
+                result = await fetch_all_pages(client, path, params=params, page_size=size)
+                datas = result.get("datas", [])
+                paging = result.get("paging", {})
+            else:
+                p = dict(params)
+                p["page"] = page
+                p["size"] = size
+                data = await client.get(path, params=p)
+                datas = data.get("datas", []) if isinstance(data, dict) else []
+                paging = data.get("paging", {}) if isinstance(data, dict) else {}
+
+        if status is not None:
+            datas = [row for row in datas if isinstance(row, dict) and row.get("configuredStatus") == status]
+
+        return ok({"datas": datas, "paging": paging, "status_filter": status})
+    except Exception as error:
+        return handle_tool_error(error)
+
+
+@track_change("ad", "ad_id")
+async def pause_ad(
+    ad_id: str,
+    ad_account_id: str | None = None,
+    dry_run: bool = True,
+    workspace_dir: str | None = None,
+) -> dict[str, Any]:
     try:
         config = LineAdsConfig.from_env()
         account_id = resolve_ad_account_id(ad_account_id, config)
-        async with LineAdsClient(config) as client:
-            data = await client.get(f"/adaccounts/{account_id}/ads", params={"adgroupId": adset_id})
-        return ok(data)
+        endpoint = f"/adaccounts/{account_id}/ads/{ad_id}"
+        payload = {"configuredStatus": "PAUSED"}
+        if dry_run:
+            return dry_run_response("pause_ad", endpoint, payload)
+        return await write_entity(config, account_id, "ad", endpoint, payload, ad_id)
+    except Exception as error:
+        return handle_tool_error(error)
+
+
+@track_change("ad", "ad_id")
+async def resume_ad(
+    ad_id: str,
+    ad_account_id: str | None = None,
+    dry_run: bool = True,
+    workspace_dir: str | None = None,
+) -> dict[str, Any]:
+    try:
+        config = LineAdsConfig.from_env()
+        account_id = resolve_ad_account_id(ad_account_id, config)
+        endpoint = f"/adaccounts/{account_id}/ads/{ad_id}"
+        payload = {"configuredStatus": "ACTIVE"}
+        if dry_run:
+            return dry_run_response("resume_ad", endpoint, payload)
+        return await write_entity(config, account_id, "ad", endpoint, payload, ad_id)
     except Exception as error:
         return handle_tool_error(error)
