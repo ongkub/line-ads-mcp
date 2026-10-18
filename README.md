@@ -481,6 +481,7 @@ line-ads-mcp
 | `get_report(level="CAMPAIGN"\|"ADGROUP"\|"AD", start_date=..., end_date=..., campaign_id=None, adgroup_id=None, fetch_all=True, by_day=False)` | ทุกหน้า; `by_day=True` = หนึ่งแถวต่อวัน×entity สูงสุด 93 วัน/คำขอ |
 | `get_daily_report` / `get_weekly_report(by_day=False)` | เมื่อวาน ระดับ AD เป็น default / รายงานสัปดาห์ |
 | `list_audiences` / `list_advanced_targeting_codes` | audience เดิมพร้อม `status`, `estimated_audience_size`, `usable_in_adset` / official interest, behavior, status codes |
+| `get_customer_list_upload_status(audience_id)` | MODE 8: jobs พร้อม job_status QUEUED/WORKING/FINISHED/FAILED, audience_count, failed_type, done; จบแล้วตรวจ list_audiences จน READY/usable_in_adset=true |
 | `estimate_adset_reach(campaign_id, campaign_objective, daily_budget, bid_type, auto_bid_type, targeting=...)` | LINE Adgroup Result Simulator (`simulation/ars`): reach/click min–max เป็นค่าประมาณ ไม่สร้างอะไร ไม่ใช่ขนาด audience จริง/ผลรับประกัน |
 | `check_spend_cap(cap_amount, start_date, end_date, campaign_id=None, period_end=None)` | อ่านอย่างเดียว; per-campaign spend และ optional projection; ไม่ pause เอง |
 
@@ -496,6 +497,7 @@ Cap ใช้เลขและช่วงวันที่ที่เจ้�
 |---|---|
 | `create_campaign` | `status="PAUSED"` default; objective enum, งบจาก user และต้องมี `start_date` |
 | `create_adset` | `status="PAUSED"` default; งบ/bid เป็น THB; interest/behavior targeting ใช้ official codes |
+| `upload_customer_list(file_path, id_type PHONE\|EMAIL\|IFA, audience_name=None, audience_id=None, action="ADD"\|"REPLACE", column=None, default_country_code="66", dry_run=True, workspace_dir=None)` | MODE 8: CSV/TXT absolute path ในเครื่อง; normalize/ตัดซ้ำ/hash PHONE/EMAIL แสดงเฉพาะ masked samples; ตรวจสิทธิใช้ → dry-run → “ยืนยัน” → upload; REPLACE แทนที่สมาชิกเดิมทั้งหมด ต้องอนุมัติชัดเจน |
 | `upload_media` | อัปโหลดรูป/วิดีโอเพื่อรับ imageHash; เป็น write ต้อง dry-run + “ยืนยัน” |
 | `create_ad` | `status="PAUSED"` default; nested creative, imageHash จาก upload, title/description ไม่เกิน 20 ตัวอักษร |
 | `update_campaign` / `update_adset` | แก้ budget/bid/targeting/status ตาม fields ที่ tool รองรับ; ห้ามเดาเงิน |
@@ -528,6 +530,7 @@ Write tools รับ optional `workspace_dir` (fallback env `LINE_ADS_WORKSPACE
 | [05-dashboard](workflows/05-dashboard.md) | บทที่ 4: Claude สร้าง Artifact จาก MCP; ไม่มี dashboard tool |
 | [06-audience-advisor](workflows/06-audience-advisor.md) | บทที่ 5: แนะนำ audience จากประวัติ อ่านอย่างเดียว ไม่สร้าง audience |
 | [07-campaign-planner](workflows/07-campaign-planner.md) | บทที่ 6: วางแผนจากประวัติ ส่งต่อบทที่ 1 ถ้าจะสร้างจริง |
+| [08-customer-list-audience](workflows/08-customer-list-audience.md) | MODE 8: ไฟล์ลูกค้าที่มีอยู่แล้วผ่าน path ในเครื่อง; ตรวจ PDPA/รูปแบบ → dry-run → ยืนยัน ADD/REPLACE → รอ READY → ใช้/ยกเว้น/LOOKALIKE |
 
 ไม่มี scheduler MCP tool: ใช้ Cowork Schedule tab หรือ `/schedule` ไม่ใช้ cron งานที่ต้องใช้ local files/apps รันเฉพาะเครื่อง local ตาม [คู่มือ Cowork Schedule](https://support.claude.com/en/articles/13854387) Scheduled task แจ้งเตือนเฉพาะ `check_spend_cap.status="exceeded"`; benchmark/creative/delivery analysis ใช้เมื่อต้องการวิเคราะห์ทันที ไม่ใส่เป็น alerts อื่นใน task
 

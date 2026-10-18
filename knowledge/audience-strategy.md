@@ -31,7 +31,7 @@
 AI อ่าน `list_campaigns(status=None, fetch_all=True)`, `list_adsets(campaign_id=None, status=None, fetch_all=True)`, report ADGROUP และ `list_audiences()` เพื่อเชื่อม targeting กับผลตาม ID; ไม่กรองเหลือเฉพาะ ACTIVE จนทิ้งประวัติ [C][M]
 ฐานเดิมแสดง ID/function_type/`status`/`estimated_audience_size`/`usable_in_adset` ตามที่คืนจริง; ใช้กับ ad set ได้เฉพาะ `status="READY"` และ `usable_in_adset=true` ไม่คืนข้อมูลให้ “ไม่ทราบ” ไม่เติม 0 หรือเดา ID [C]
 `estimated_audience_size="-"` = เล็กเกินรายงาน; `"100 or fewer"` = ไม่เกิน 100 คน ห้ามแปลงเป็นจำนวนแน่นอน; ฐานใหม่ที่เสนอ **ยังไม่ทราบขนาดจน LINE สร้างเสร็จ** ไม่ใช้ ARS แทนขนาดฐาน [C]
-Customer-list upload (hashed phone/email) **ไม่รองรับผ่าน MCP** ให้ผู้ใช้ทำเองใน LINE Ads Manager ไม่อ่าน/ขอแนบไฟล์ลูกค้า; การใช้ Custom Audience ต้องมีสิทธิ์ของบัญชี [C]
+Customer-list upload ส่งต่อ [MODE 8](../workflows/08-customer-list-audience.md) ใช้ `upload_customer_list` ผ่าน path ในเครื่อง หลังตรวจ consent/ฐานกฎหมายและ dry-run/“ยืนยัน”; MODE 6 ไม่อ่านไฟล์หรือ upload และห้ามขอแนบข้อมูลดิบในแชท; บัญชีต้องมีสิทธิ์ Custom Audience [C]
 
 ### เลือกหรือสร้างใน MODE 2 เท่านั้น
 
@@ -93,7 +93,7 @@ campaign_id, campaign_objective, daily_budget, bid_type, auto_bid_type
 - รวมผลของ targeting เดียวกันเฉพาะ objective/result/currency/ช่วงเดียวกัน; ตรวจ demographic, groups, custom IDs และ exclusions ไม่ใช้ชื่อ ad set เป็นตัวตัดสิน [M][P]
 - ใช้เกณฑ์วัน/ผลลัพธ์และ confidence ใน [P]; sample น้อยเป็นสมมติฐาน ไม่ใช่ audience ชนะ และผล ADGROUP ไม่ได้แจกผลงานเป็นราย code [M][P]
 - **ข้อเสนอเชิง heuristic:** เพิ่มฐาน WEBTRAFFIC ด้วย LINE Tag และผู้เข้าเว็บที่เกี่ยวข้อง, เพิ่มฐาน OA ด้วยเพื่อนที่สนใจจริง, เพิ่ม engagement ด้วยเนื้อหาที่ตอบโจทย์; ตรวจความพร้อม/สิทธิใช้งานก่อน ไม่รับปากว่ากลายเป็น audience ทันที [API; กติกาแนะนำ]
-- เสนอรายชื่อลูกค้าเฉพาะที่มีสิทธิใช้ โดย upload เองผ่าน LINE Ads Manager เท่านั้น; บทนี้ไม่อ่านไฟล์ลูกค้า ไม่ upload ไม่ติดตั้ง tracking และไม่เปลี่ยนระบบ consent [C; กติกาขอบเขต]
+- เสนอรายชื่อลูกค้าเฉพาะที่มีสิทธิใช้ แล้วส่งต่อ MODE 8 เพื่อตรวจไฟล์/ยืนยัน upload ผ่าน MCP; บทนี้ไม่อ่านไฟล์ลูกค้า ไม่ upload ไม่ติดตั้ง tracking และไม่เปลี่ยนระบบ consent [C; กติกาขอบเขต]
 - ตรวจข้อจำกัดสินค้าจาก [line-ads-guidelines.md](line-ads-guidelines.md) ก่อนเสนอแนวทาง; รายละเอียด creative ให้ไป [ad-specs.md](ad-specs.md) ไม่คัดลอกเกณฑ์ซ้ำ
 
 ## ส่งต่อและข้อห้าม

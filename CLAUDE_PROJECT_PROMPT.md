@@ -38,6 +38,7 @@
 - `estimate_adset_reach(campaign_id, campaign_objective, daily_budget, bid_type, auto_bid_type, targeting=...)` — ARS ประเมิน reach/click min–max ไม่สร้างอะไร; รองรับ targeting params แบบ create_adset และ optional adset_id, bid_amount, bid_strategy; เป็นเครื่องมือเดียวสำหรับเช็กขนาดกลุ่มของ ad set
 - `check_spend_cap(cap_amount, start_date, end_date, campaign_id=None, period_end=None)` — อ่านอย่างเดียว: exceeded เมื่อ spend > cap, within_cap หรือ indeterminate เมื่อข้อมูลไม่ครบ; ไม่ pause อัตโนมัติ
 - `list_audiences` — ดู custom audience พร้อม `status`, `estimated_audience_size` (`"-"` = เล็กเกินรายงาน, `"100 or fewer"` = ไม่เกิน 100 คน), `usable_in_adset`; ใช้ใน ad set เฉพาะ READY/usable_in_adset=true
+- `get_customer_list_upload_status(audience_id)` — MODE 8 ติดตาม jobs: job_status QUEUED/WORKING/FINISHED/FAILED, audience_count, failed_type, done; หลังจบยังต้องตรวจ list_audiences จน READY/usable_in_adset=true
 - `list_advanced_targeting_codes` — ดู interest/behavior/status codes ก่อนสร้าง manual targeting
 
 **แก้ไข/สร้าง (ต้อง dry_run ก่อนเสมอ)**
@@ -45,11 +46,12 @@
 - `create_adset` — สร้าง ad set
 - `create_ad` — สร้าง ad (ต้องมี imageHash จาก upload_media ก่อน)
 - `upload_media` — อัปโหลดรูปหรือวิดีโอ
+- `upload_customer_list(file_path, id_type PHONE|EMAIL|IFA, audience_name=None, audience_id=None, action="ADD"|"REPLACE", column=None, default_country_code="66", dry_run=True, workspace_dir=None)` — MODE 8 รับ absolute path CSV/TXT ในเครื่อง หลังตรวจ consent/ฐานกฎหมาย; normalize/ตัดซ้ำ/hash PHONE/EMAIL ในหน่วยความจำ แสดงเฉพาะ masked samples; dry-run → สรุปจำนวน/ADD หรือ REPLACE → รอ “ยืนยัน” → upload → ติดตามสถานะ; REPLACE ต้องอนุมัติแทนที่สมาชิกเดิมทั้งหมดชัดเจน ห้ามขอแนบ/วางข้อมูลดิบในแชท
 - `update_campaign` / `update_adset` — แก้ไข budget, ชื่อ
 - `pause_campaign` / `resume_campaign` — หยุด/เปิด campaign
 - `pause_adset` / `resume_adset` — หยุด/เปิด ad set
 - `pause_ad(ad_id, dry_run=True)` / `resume_ad(ad_id, dry_run=True)` — หยุด/เปิด ad
-- `create_audience(name, function_type, config, dry_run=True, workspace_dir=None)` — MODE 2 สร้างหลัง Avatar Gate ได้: LOOKALIKE (source audience + size ratio), APP_EVENT, WEBTRAFFIC (LINE Tag, retentionDays 1–180), ACCOUNT_FRIENDS (OA), VIDEO_VIEW, IMAGE_CLICK (ผู้มีส่วนร่วมกับโฆษณาที่ผ่านมา); ต้องมีสิทธิ์ Custom Audience; dry-run → สรุป → “ยืนยัน” → execute → readback; ฐานใหม่เริ่ม IN_PROGRESS ขนาดยังไม่ทราบจน LINE สร้างเสร็จ ต้อง re-check list_audiences จน READY ก่อนใช้; customer-list upload (hashed phone/email) ให้ผู้ใช้ทำใน LINE Ads Manager ไม่รองรับผ่าน MCP; MODE 6 ห้ามสร้าง
+- `create_audience(name, function_type, config, dry_run=True, workspace_dir=None)` — MODE 2 สร้างหลัง Avatar Gate ได้: LOOKALIKE (source audience + size ratio), APP_EVENT, WEBTRAFFIC (LINE Tag, retentionDays 1–180), ACCOUNT_FRIENDS (OA), VIDEO_VIEW, IMAGE_CLICK (ผู้มีส่วนร่วมกับโฆษณาที่ผ่านมา); ต้องมีสิทธิ์ Custom Audience; dry-run → สรุป → “ยืนยัน” → execute → readback; ฐานใหม่เริ่ม IN_PROGRESS ขนาดยังไม่ทราบจน LINE สร้างเสร็จ ต้อง re-check list_audiences จน READY ก่อนใช้; customer-list upload ให้ส่งต่อ MODE 8 ผ่าน upload_customer_list; MODE 6 ห้ามสร้าง
 - `sync_ad_daily_csv(start_date, end_date, workspace_dir, campaign_id=None, dry_run=True)` — เฉพาะ scheduled task บทที่ 2: upsert `line-ads-data/ad_daily.csv` และ `run_log.csv`; ผู้อ่านไม่ต้องเตรียมไฟล์
 
 การสร้าง `create_campaign` / `create_adset` / `create_ad` ใช้ `status="PAUSED"` เป็น default
@@ -71,6 +73,7 @@ Dashboard ให้ Claude สร้าง Artifact เอง ไม่มี da
 | optimize / pause / budget / bid / targeting | `workflows/04-optimize.md` + `knowledge/kpi-benchmarks.md` + `knowledge/bidding-strategy.md` + `knowledge/report-metrics.md` |
 | dashboard / ภาพรวมแบบ Artifact | `workflows/05-dashboard.md` + `knowledge/report-metrics.md` + `knowledge/dashboard-spec.md` |
 | แนะนำ audience จากประวัติ | `workflows/06-audience-advisor.md` + `knowledge/audience-strategy.md` + `knowledge/interest-catalog-INDEX.md` |
+| อัปโหลดรายชื่อลูกค้า / จัดรูปแบบเบอร์หรืออีเมล | `workflows/08-customer-list-audience.md` + `knowledge/customer-list-format.md` |
 | วางแผน campaign จากประวัติ | `workflows/07-campaign-planner.md` + `knowledge/planning-from-history.md` + `knowledge/kpi-benchmarks.md` + `knowledge/bidding-strategy.md` |
 
 ถ้า workflow ไปถึงขั้นที่ต้องใช้ knowledge เพิ่ม ให้หยุดอ่านไฟล์นั้นก่อน แล้วค่อยแนะนำหรือเรียก MCP tool ต่อ เช่น ก่อน upload รูปต้องอ่าน `knowledge/ad-specs.md`, ก่อนเลือก interest ต้องอ่าน `knowledge/interest-catalog-INDEX.md`
@@ -86,10 +89,11 @@ Dashboard ให้ Claude สร้าง Artifact เอง ไม่มี da
 | MODE 5 Dashboard | ทำ dashboard ผลโฆษณา 4 สัปดาห์ล่าสุด, dashboard | `workflows/05-dashboard.md` |
 | MODE 6 Audience Advisor | แนะนำกลุ่มเป้าหมายจากแคมเปญที่ผ่านมา, ขยาย audience | `workflows/06-audience-advisor.md` |
 | MODE 7 Campaign Planner | อยากเปิดแคมเปญใหม่ ช่วยวางแผนจากผลที่ผ่านมา | `workflows/07-campaign-planner.md` |
+| MODE 8 Customer List Audience | อัปโหลดเบอร์/อีเมลลูกค้า, ยิงหาหรือยกเว้นลูกค้าเดิมจากไฟล์ | `workflows/08-customer-list-audience.md` |
 
 ถ้าขอแผนจากประวัติให้เข้า MODE 7 ก่อน MODE 2; ถ้าขอคำแนะนำ audience ให้เข้า MODE 6 ก่อนขั้นสร้าง
 MODE 5/6/7 เริ่มจากแชทประโยคเดียว AI ดึงบัญชีผ่าน MCP เอง ถามทีละเรื่องเฉพาะสิ่งที่บัญชีตอบไม่ได้ (เป้าหมายธุรกิจ, งบ/cap, วันเริ่ม, ข้อเท็จจริงสินค้า, approval)
-ผู้อ่านไม่ต้องเตรียม/แนบ/เขียนไฟล์ ยกเว้นรูป creative; วันรายงานเป็น UTC เสมอ
+ผู้อ่านไม่ต้องเตรียม/แนบ/เขียนไฟล์ ยกเว้นรูป creative และ MODE 8 ที่ใช้ไฟล์ลูกค้าที่มีอยู่แล้วผ่าน absolute path ในเครื่องเท่านั้น ห้ามแนบหรือวางข้อมูลลูกค้าดิบในแชท; วันรายงานเป็น UTC เสมอ
 MODE 5 เป็น snapshot ต้องขอ refresh ใหม่; MODE 6/7 อ่านอย่างเดียว ถ้าจะสร้างให้ต่อ MODE 2 ในแชทเดิมโดยพกแผนในแชท ไม่สร้าง brief file; MODE 6 ต้องผ่าน Customer Avatar Gate ใน workflow 02 ก่อนเสนอ Core แล้วส่ง customer_avatar พร้อมหลักฐาน/คำตอบ, targeting และ audience IDs/status/ขนาด/ข้อจำกัด หรือ function_type/config ที่เสนอสำหรับฐานใหม่ ให้ MODE 2 เลือกหรือสร้างก่อน ad set และรอ READY ตามขั้นตอน
 ทุก write ที่ส่งต่อ: dry-run → สรุปตัวเลข → รอผู้ใช้พิมพ์ “ยืนยัน” → execute → read back; คำว่า “สร้างตามแผนนี้” ไม่ข้าม gate นี้
 

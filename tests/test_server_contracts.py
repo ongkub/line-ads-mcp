@@ -9,7 +9,7 @@ import pytest
 from jsonschema import Draft202012Validator
 
 from line_ads_mcp import server
-from line_ads_mcp.tools import ads, adsets, audiences, campaigns, entities, reach, reports
+from line_ads_mcp.tools import ads, adsets, audiences, campaigns, customer_lists, entities, reach, reports
 
 
 EXPECTED_NAMES = {
@@ -19,6 +19,7 @@ EXPECTED_NAMES = {
     "get_report", "get_daily_report", "get_weekly_report", "list_audiences",
     "list_advanced_targeting_codes", "create_audience", "get_entity", "estimate_adset_reach",
     "check_spend_cap", "sync_ad_daily_csv",
+    "upload_customer_list", "get_customer_list_upload_status",
 }
 APPROVAL = "ต้องให้ผู้ใช้พิมพ์ ยืนยัน หลังเห็น dry run ก่อนส่ง dry_run=false"
 
@@ -116,6 +117,7 @@ ENUM_CONSTANTS = {
     "get_daily_report": {"level": reports.REPORT_LEVELS},
     "get_weekly_report": {"level": reports.REPORT_LEVELS},
     "create_audience": {"function_type": audiences.AUDIENCE_FUNCTION_TYPES},
+    "upload_customer_list": {"id_type": customer_lists.ID_TYPES, "action": customer_lists.ACTIONS},
     "get_entity": {"entity_type": entities.VALID_ENTITY_TYPES},
     "estimate_adset_reach": {
         "campaign_objective": reach.OBJECTIVES, "bid_type": reach.ARS_BID_TYPES,

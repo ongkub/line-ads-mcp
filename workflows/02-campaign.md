@@ -270,7 +270,7 @@ Tool: `create_adset`
 | `VIDEO_VIEW` | ผู้ดูวิดีโอโฆษณาที่ผ่านมา | โฆษณาวิดีโอต้นทาง |
 | `IMAGE_CLICK` | ผู้คลิกรูปโฆษณาที่ผ่านมา | โฆษณารูปต้นทาง |
 
-Customer-list upload (hashed phone/email) **ไม่รองรับผ่าน MCP** ให้ผู้ใช้ทำเองใน LINE Ads Manager ไม่ขออ่าน/แนบไฟล์ลูกค้า
+Customer-list upload ให้ส่งต่อ **MODE 8**: อ่าน `workflows/08-customer-list-audience.md` + `knowledge/customer-list-format.md` ตรวจสิทธิใช้ข้อมูล แล้วใช้ `upload_customer_list` ผ่าน absolute path ในเครื่อง ไม่ขอแนบ/วางข้อมูลดิบในแชท; dry-run → สรุป → “ยืนยัน” → upload → ตรวจสถานะจน READY/usable_in_adset=true แล้วกลับมาใช้ ID ในขั้นนี้
 
 ```text
 create_audience(name=..., function_type=..., config=..., dry_run=True)

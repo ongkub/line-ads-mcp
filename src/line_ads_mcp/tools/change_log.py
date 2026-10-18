@@ -53,6 +53,10 @@ def track_change(entity_type: str, id_parameter: str | None = None):
             arguments = signature.bind(*args, **kwargs)
             arguments.apply_defaults()
             values = arguments.arguments
+            if type(values["dry_run"]) is not bool:
+                # Only an explicit False may write; None/0/"" must never reach the API.
+                return {"ok": False, "error_code": "VALIDATION_ERROR",
+                        "message": "dry_run ต้องเป็น true หรือ false เท่านั้น"}
             if values["dry_run"] or _current_change.get() is not None:
                 return await function(*args, **kwargs)
             record = {

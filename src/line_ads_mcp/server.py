@@ -23,6 +23,7 @@ from line_ads_mcp.tools.campaigns import (
 )
 from line_ads_mcp.tools.codes import list_advanced_targeting_codes
 from line_ads_mcp.tools.csv_sync import sync_ad_daily_csv
+from line_ads_mcp.tools.customer_lists import get_customer_list_upload_status, upload_customer_list
 from line_ads_mcp.tools.entities import get_entity
 from line_ads_mcp.tools.reach import estimate_adset_reach
 from line_ads_mcp.tools.reports import get_daily_report, get_report, get_weekly_report
@@ -542,6 +543,36 @@ TOOLS: dict[str, tuple[str, dict[str, Any], ToolFn]] = {
             ["name", "function_type", "config"],
         ),
         create_audience,
+    ),
+    "upload_customer_list": (
+        "เขียน: อัปโหลดรายชื่อลูกค้า PHONE/EMAIL/IFA จาก CSV/TXT; dry_run=True เป็นค่าเริ่มต้น; ต้องให้ผู้ใช้พิมพ์ ยืนยัน หลังเห็น dry run ก่อนส่ง dry_run=false; ไม่ส่ง/ไม่บันทึกข้อมูลดิบ ส่งเฉพาะ hash สำหรับ PHONE/EMAIL (IFA ส่ง UUID); เจ้าของข้อมูลต้องมีความยินยอม/ฐานทางกฎหมายตาม PDPA; ยืนยันด้วยไฟล์ทดสอบเล็กก่อนใช้จริง",
+        schema(
+            {
+                "file_path": {"type": "string", "description": "absolute path ของ CSV/TXT UTF-8"},
+                "id_type": {"type": "string", "enum": ["PHONE", "EMAIL", "IFA"]},
+                "audience_name": {"type": ["string", "null"], "default": None},
+                "audience_id": {"type": ["string", "null"], "default": None},
+                "action": {"type": "string", "enum": ["ADD", "REPLACE"], "default": "ADD"},
+                "column": {"type": ["string", "null"], "default": None},
+                "default_country_code": {"type": "string", "default": "66"},
+                "ad_account_id": {"type": ["string", "null"], "default": None},
+                "dry_run": {"type": "boolean", "default": True},
+                "workspace_dir": {"type": ["string", "null"], "default": None},
+            },
+            ["file_path", "id_type"],
+        ),
+        upload_customer_list,
+    ),
+    "get_customer_list_upload_status": (
+        "อ่านอย่างเดียว: ตรวจ upload job ของรายชื่อลูกค้า; FINISHED/FAILED คืองานจบ ต้องตรวจ list_audiences จน READY ก่อนใช้ใน ad set",
+        schema(
+            {
+                "audience_id": {"type": "string"},
+                "ad_account_id": {"type": ["string", "null"], "default": None},
+            },
+            ["audience_id"],
+        ),
+        get_customer_list_upload_status,
     ),
     "get_entity": (
         "อ่านอย่างเดียว: ค้น campaign/adset/ad ด้วย exact ID คืน configured_status, delivery_status, budget, bid, targeting และ raw; NOT_APPROVED หมายถึงไม่ผ่านการตรวจ ไม่มีพารามิเตอร์ dry_run",

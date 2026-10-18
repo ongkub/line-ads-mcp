@@ -256,3 +256,16 @@ def test_append_uses_single_write_call(monkeypatch, tmp_path):
     assert len(writes) == 1
     assert len(writes[0].splitlines()) == 1
     assert json.loads(writes[0])["payload"] == "ภาษาไทย\nหนึ่งระเบียน"
+
+
+@pytest.mark.parametrize("bad", [None, 0, "", "false"])
+async def test_non_bool_dry_run_never_writes(monkeypatch, bad):
+    from line_ads_mcp.client import LineAdsClient
+    from line_ads_mcp.tools.campaigns import pause_campaign
+
+    async def forbidden(*args, **kwargs):
+        pytest.fail("no request allowed")
+
+    monkeypatch.setattr(LineAdsClient, "request", forbidden)
+    result = await pause_campaign("123", dry_run=bad)
+    assert result["ok"] is False and result["error_code"] == "VALIDATION_ERROR"
