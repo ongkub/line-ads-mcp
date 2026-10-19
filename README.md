@@ -505,7 +505,7 @@ Cap ใช้เลขและช่วงวันที่ที่เจ้�
 | `pause_adset` / `resume_adset` | PAUSED / ACTIVE หลัง approval ใหม่ |
 | `pause_ad(ad_id, dry_run=True)` / `resume_ad(ad_id, dry_run=True)` | หยุด/เปิด ad ด้วย exact ID หลัง approval ใหม่ |
 | `create_audience(name, function_type, config, dry_run=True, workspace_dir=None)` | `LOOKALIKE` (source audience + size ratio), `APP_EVENT`, `WEBTRAFFIC` (LINE Tag, retentionDays 1–180), `ACCOUNT_FRIENDS` (OA), `VIDEO_VIEW`, `IMAGE_CLICK` (ผู้มีส่วนร่วมกับโฆษณาที่ผ่านมา); ต้องมีสิทธิ์ Custom Audience |
-| `sync_ad_daily_csv(start_date, end_date, workspace_dir, campaign_id=None, dry_run=True)` | optional history เฉพาะ scheduled task บทที่ 2; upsert ด้วย key date+ad_id และบันทึก run log |
+| `sync_ad_daily_csv(start_date, end_date, workspace_dir, campaign_id=None, dry_run=True)` | optional history เฉพาะ scheduled task บทที่ 5; upsert ด้วย key date+ad_id และบันทึก run log |
 
 Audience: MODE 2 เลือกหรือสร้างฐานหลัง Customer Avatar Gate ก่อนสร้าง ad set ได้; MODE 6 ให้คำแนะนำเท่านั้น ส่งต่อ MODE 2 ในแชทเดิมเมื่อจะสร้าง ไม่เรียก create_audience/create_adset เอง ทุก write ต้อง dry-run → สรุป → “ยืนยัน” → execute → readback ฐานใหม่เริ่ม `IN_PROGRESS` ต้อง re-check `list_audiences` และใช้ใน ad set เฉพาะ `status="READY"` / `usable_in_adset=true` ส่ง `custom_audience_ids` / `excluded_audience_ids` ชุดเดียวกันให้ create_adset และ estimate_adset_reach; GAIN_FRIENDS ยังต้องยกเว้น active friends audience ที่พร้อมใช้
 
@@ -524,13 +524,13 @@ Write tools รับ optional `workspace_dir` (fallback env `LINE_ADS_WORKSPACE
 | Workflow | งาน |
 |---|---|
 | [01-account-setup](workflows/01-account-setup.md) | เปิดบัญชี/KYC; sensitive fields ให้ user กรอกเอง |
-| [02-campaign](workflows/02-campaign.md) | บทที่ 1: campaign → ad set → upload → ad เป็น PAUSED พร้อมตรวจ readback |
-| [03-report-schedule](workflows/03-report-schedule.md) | บทที่ 2: report → summary → cap exceeded alert → optional CSV history |
-| [04-optimize](workflows/04-optimize.md) | บทที่ 3: ดึง ACTIVE/report → diagnose → เสนอ → before/dry-run/ยืนยัน/execute → after/log/follow-up |
+| [02-campaign](workflows/02-campaign.md) | บทที่ 3: campaign → ad set → upload → ad เป็น PAUSED พร้อมตรวจ readback |
+| [03-report-schedule](workflows/03-report-schedule.md) | บทที่ 5: report → summary → cap exceeded alert → optional CSV history |
+| [04-optimize](workflows/04-optimize.md) | บทที่ 6: ดึง ACTIVE/report → diagnose → เสนอ → before/dry-run/ยืนยัน/execute → after/log/follow-up |
 | [05-dashboard](workflows/05-dashboard.md) | บทที่ 4: Claude สร้าง Artifact จาก MCP; ไม่มี dashboard tool |
-| [06-audience-advisor](workflows/06-audience-advisor.md) | บทที่ 5: แนะนำ audience จากประวัติ อ่านอย่างเดียว ไม่สร้าง audience |
-| [07-campaign-planner](workflows/07-campaign-planner.md) | บทที่ 6: วางแผนจากประวัติ ส่งต่อบทที่ 1 ถ้าจะสร้างจริง |
-| [08-customer-list-audience](workflows/08-customer-list-audience.md) | MODE 8: ไฟล์ลูกค้าที่มีอยู่แล้วผ่าน path ในเครื่อง; ตรวจ PDPA/รูปแบบ → dry-run → ยืนยัน ADD/REPLACE → รอ READY → ใช้/ยกเว้น/LOOKALIKE |
+| [06-audience-advisor](workflows/06-audience-advisor.md) | บทที่ 1: แนะนำ Core audience จากประวัติ อ่านอย่างเดียว ไม่สร้าง audience |
+| [07-campaign-planner](workflows/07-campaign-planner.md) | โหมดเสริม (ไม่อยู่ในเล่ม): วางแผนจากประวัติ ส่งต่อบทที่ 1 ถ้าจะสร้างจริง |
+| [08-customer-list-audience](workflows/08-customer-list-audience.md) | บทที่ 2 / MODE 8: ไฟล์ลูกค้าที่มีอยู่แล้วผ่าน path ในเครื่อง; ตรวจ PDPA/รูปแบบ → dry-run → ยืนยัน ADD/REPLACE → รอ READY → ใช้/ยกเว้น/LOOKALIKE |
 
 ไม่มี scheduler MCP tool: ใช้ Cowork Schedule tab หรือ `/schedule` ไม่ใช้ cron งานที่ต้องใช้ local files/apps รันเฉพาะเครื่อง local ตาม [คู่มือ Cowork Schedule](https://support.claude.com/en/articles/13854387) Scheduled task แจ้งเตือนเฉพาะ `check_spend_cap.status="exceeded"`; benchmark/creative/delivery analysis ใช้เมื่อต้องการวิเคราะห์ทันที ไม่ใส่เป็น alerts อื่นใน task
 

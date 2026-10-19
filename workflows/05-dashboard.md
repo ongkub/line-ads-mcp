@@ -60,7 +60,7 @@ get_report(level="AD", start_date=start_date, end_date=end_date,
 - ถ้าข้อมูลโฆษณาขาดชื่อหรือ parent ID ใช้ `list_ads(campaign_id=None, status=None, fetch_all=True)` เพิ่มเท่าที่จำเป็น
 - ไม่กรองเฉพาะ ACTIVE: รายการ PAUSED/REMOVED อาจมีผลงานในช่วงที่ดู
 
-### ประวัติจากบทที่ 2 (optional)
+### ประวัติจากบทที่ 5 (optional)
 
 ถ้ามี `line-ads-data/ad_daily.csv` อยู่แล้วใน workspace ที่เข้าถึงได้ ให้ AI อ่านเองเพื่อเสริมช่วงเก่า
 ถ้าไม่มี ให้ใช้ MCP ต่อ ไม่ขอให้ผู้ใช้เตรียม/แนบ/เขียนไฟล์ และไม่เรียก `sync_ad_daily_csv`

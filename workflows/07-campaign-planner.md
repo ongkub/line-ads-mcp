@@ -1,6 +1,6 @@
 # workflows/07-campaign-planner.md
 # Data-driven Campaign Planner Workflow
-# Version 1.0 | October 2026 | MCP-first | บทที่ 6
+# Version 1.0 | October 2026 | MCP-first | ไม่อยู่ในเล่มแล้ว (ตัดออก 19 ต.ค. 2026) — เก็บไว้เป็นโหมดเสริม
 
 ---
 

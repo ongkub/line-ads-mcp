@@ -52,7 +52,7 @@
 - `pause_adset` / `resume_adset` — หยุด/เปิด ad set
 - `pause_ad(ad_id, dry_run=True)` / `resume_ad(ad_id, dry_run=True)` — หยุด/เปิด ad
 - `create_audience(name, function_type, config, dry_run=True, workspace_dir=None)` — MODE 2 สร้างหลัง Avatar Gate ได้: LOOKALIKE (source audience + size ratio), APP_EVENT, WEBTRAFFIC (LINE Tag, retentionDays 1–180), ACCOUNT_FRIENDS (OA), VIDEO_VIEW, IMAGE_CLICK (ผู้มีส่วนร่วมกับโฆษณาที่ผ่านมา); ต้องมีสิทธิ์ Custom Audience; dry-run → สรุป → “ยืนยัน” → execute → readback; ฐานใหม่เริ่ม IN_PROGRESS ขนาดยังไม่ทราบจน LINE สร้างเสร็จ ต้อง re-check list_audiences จน READY ก่อนใช้; customer-list upload ให้ส่งต่อ MODE 8 ผ่าน upload_customer_list; MODE 6 ห้ามสร้าง
-- `sync_ad_daily_csv(start_date, end_date, workspace_dir, campaign_id=None, dry_run=True)` — เฉพาะ scheduled task บทที่ 2: upsert `line-ads-data/ad_daily.csv` และ `run_log.csv`; ผู้อ่านไม่ต้องเตรียมไฟล์
+- `sync_ad_daily_csv(start_date, end_date, workspace_dir, campaign_id=None, dry_run=True)` — เฉพาะ scheduled task บทที่ 5: upsert `line-ads-data/ad_daily.csv` และ `run_log.csv`; ผู้อ่านไม่ต้องเตรียมไฟล์
 
 การสร้าง `create_campaign` / `create_adset` / `create_ad` ใช้ `status="PAUSED"` เป็น default
 ทุก real write (`dry_run=False`) คืน `readback` และ `readback_ok`; update/pause/resume คืน `before` ด้วย ต้องตรวจค่าหลังทำก่อนบอกว่าสำเร็จ

@@ -1,6 +1,6 @@
 # workflows/06-audience-advisor.md
 # Audience Advisor Workflow
-# Version 1.0 | October 2026 | MCP-first | บทที่ 5
+# Version 1.0 | October 2026 | MCP-first | บทที่ 1 (Core Audience)
 
 ---
 

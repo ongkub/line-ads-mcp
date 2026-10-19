@@ -1,6 +1,6 @@
 # หลักคิดแนะนำ Audience จากบัญชีจริง
 
-ใช้ MODE 6 / บทที่ 5: **ให้คำแนะนำอย่างเดียว ไม่สร้าง audience หรือ ad set** ตาม [กฎหลัก](../CLAUDE_PROJECT_PROMPT.md#mode-routing) [C]
+ใช้ MODE 6 / บทที่ 1 (Core Audience); Custom Audience อยู่ MODE 8 / บทที่ 2: **ให้คำแนะนำอย่างเดียว ไม่สร้าง audience หรือ ad set** ตาม [กฎหลัก](../CLAUDE_PROJECT_PROMPT.md#mode-routing) [C]
 เริ่มจากแชทหนึ่งประโยค AI ดึงบัญชีเอง ถามทีละเรื่องเฉพาะสินค้า/ลูกค้าที่ต้องการ/งบที่บัญชีตอบไม่ได้ ไม่ขอไฟล์ลูกค้า [C]
 
 ## แหล่งอ้างอิง

@@ -2,7 +2,7 @@
 # LINE Ads Report + Scheduled Tasks Workflow
 # Version 4.0 | October 2026 | MCP-first + spend cap
 
-## Entry Point — บทที่ 2
+## Entry Point — บทที่ 5
 
 เริ่มจากประโยคเดียว เช่น “ช่วยสรุปผลโฆษณาเมื่อวาน และรายงานทุกเช้า” AI ดึงบัญชี/ชื่อ/IDs/objective ผ่าน MCP เอง ไม่ให้ผู้อ่านเตรียม แนบ หรือเขียนไฟล์
 
