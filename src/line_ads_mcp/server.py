@@ -587,7 +587,7 @@ TOOLS: dict[str, tuple[str, dict[str, Any], ToolFn]] = {
         get_entity,
     ),
     "estimate_adset_reach": (
-        "อ่านอย่างเดียว: ประเมินช่วง reach และ clicks ผ่าน LINE Adgroup Result Simulator พร้อม absent/invalid/ignored fields; ARS ใช้ targetingMode=MANUAL เท่านั้น (ปรับให้อัตโนมัติ); ต้องระบุ bid_amount ยกเว้น bid_strategy=LOWEST_COST; ค่าประมาณ ไม่สร้างอะไร ไม่มีพารามิเตอร์ dry_run",
+        "อ่านอย่างเดียว: ประเมินช่วง reach และ clicks ผ่าน LINE Adgroup Result Simulator พร้อม absent/invalid/ignored fields; ARS ใช้ targetingMode=MANUAL เท่านั้น (ปรับให้อัตโนมัติ); ARS รับเฉพาะ interests ใน advanced targeting — behaviors/purchaseIntents ถูกตัดออกและแจ้งใน omitted_for_simulation; ต้องระบุ bid_amount ยกเว้น bid_strategy=LOWEST_COST; ค่าประมาณ ไม่สร้างอะไร ไม่มีพารามิเตอร์ dry_run",
         schema(
             {
                 "campaign_id": {"type": ["string", "integer"]},

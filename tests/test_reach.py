@@ -1,11 +1,12 @@
 """Tests for reach simulation (ARS) tool."""
 
+import copy
 from typing import Any
 import pytest
 
 from line_ads_mcp.client import LineAdsAPIError, LineAdsClient
 from line_ads_mcp.tools.adsets import create_adset
-from line_ads_mcp.tools.reach import NOTE_ARS, estimate_adset_reach
+from line_ads_mcp.tools.reach import NOTE_ARS, NOTE_OMITTED, estimate_adset_reach
 
 
 @pytest.fixture(autouse=True)
@@ -325,3 +326,32 @@ async def test_ars_bid_requirement_before_http(monkeypatch, bid_strategy, bid_am
         assert result["status_code"] == 400
         assert result["error_code"] == "VALIDATION_ERROR"
         assert result["message"] == 'ต้องระบุ bid_amount เมื่อ bid_strategy เป็น COST_CAP หรือไม่ระบุ หรือใช้ bid_strategy="LOWEST_COST"'
+
+
+@pytest.mark.parametrize("targeting,sent,omitted", [
+    ({"targetingMode": "MANUAL", "includeAdvancedTargetings": [{"interests": ["6"], "behaviors": ["1709"]}]},
+     {"targetingMode": "MANUAL", "includeAdvancedTargetings": [{"interests": ["6"]}]}, {"behaviors": ["1709"]}),
+    ({"targetingMode": "MANUAL", "includeAdvancedTargetings": [{"interests": ["6"]}, {"behaviors": ["1590", "1591"]}]},
+     {"targetingMode": "MANUAL", "includeAdvancedTargetings": [{"interests": ["6"]}]}, {"behaviors": ["1590", "1591"]}),
+    ({"targetingMode": "MANUAL", "includeAdvancedTargetings": [{"purchaseIntents": ["1021"]}],
+      "excludeAdvancedTargeting": {"behaviors": ["1590"]}},
+     {"targetingMode": "MANUAL"}, {"purchaseIntents": ["1021"], "behaviors": ["1590"]}),
+    ({"targetingMode": "MANUAL", "includeAdvancedTargetings": [{"interests": ["6"]}]},
+     {"targetingMode": "MANUAL", "includeAdvancedTargetings": [{"interests": ["6"]}]}, None),
+])
+async def test_ars_strips_unsupported_advanced_targeting(monkeypatch, targeting, sent, omitted):
+    calls = []
+
+    async def post(self, path, body):
+        calls.append(body)
+        return {"reach": [1, 2], "result": [0, 1]}
+
+    monkeypatch.setattr(LineAdsClient, "post", post)
+    original = copy.deepcopy(targeting)
+    result = await estimate_adset_reach("c1", "GAIN_FRIENDS", 300, "CPF", "FRIEND",
+                                        bid_strategy="LOWEST_COST", targeting=targeting)
+    assert result["ok"] is True
+    assert calls[0]["targeting"] == sent
+    assert targeting == original
+    assert result["data"].get("omitted_for_simulation") == omitted
+    assert (NOTE_OMITTED in result["data"].get("adjusted", [])) is bool(omitted)

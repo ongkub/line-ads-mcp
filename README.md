@@ -485,7 +485,7 @@ line-ads-mcp
 | `estimate_adset_reach(campaign_id, campaign_objective, daily_budget, bid_type, auto_bid_type, targeting=...)` | LINE Adgroup Result Simulator (`simulation/ars`): reach/click min–max เป็นค่าประมาณ ไม่สร้างอะไร ไม่ใช่ขนาด audience จริง/ผลรับประกัน |
 | `check_spend_cap(cap_amount, start_date, end_date, campaign_id=None, period_end=None)` | อ่านอย่างเดียว; per-campaign spend และ optional projection; ไม่ pause เอง |
 
-`estimate_adset_reach` รองรับ targeting params แบบ `create_adset` หรือ `targeting` และ optional `adset_id`, `bid_amount`, `bid_strategy`; แจ้ง absent/invalid fields โดยไม่เดาตัวเลขเงิน
+`estimate_adset_reach` รองรับ targeting params แบบ `create_adset` หรือ `targeting` และ optional `adset_id`, `bid_amount`, `bid_strategy`; แจ้ง absent/invalid fields โดยไม่เดาตัวเลขเงิน · ARS ใช้ targetingMode MANUAL และรับเฉพาะ interests (ตรวจกับ API จริง 25 ต.ค. 2026: behaviors/purchaseIntents ได้ 422 ทุก objective) tool จึงตัดออกก่อนจำลองและแจ้ง `omitted_for_simulation` — ผลจะกว้างกว่ากลุ่มจริง
 
 รายงานคืน `paging.complete` (true/false) และ `date_basis: "UTC"` ต้องตรวจความครบถ้วนก่อนสรุป วันรายงานเป็น UTC; summary keys คือ `total_spend`, `total_clicks`, `total_impressions`, `total_cv`, `avg_ctr` (%), `avg_cpc`, `avg_cpm` ค่าเฉลี่ยเป็น `None` เมื่อไม่มีตัวหาร ไม่ใช้ CV/CPA/ROAS วิเคราะห์ objective ที่ไม่ใช่ WEBSITE_CONVERSION
 

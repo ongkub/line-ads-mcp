@@ -19,6 +19,47 @@ NOTE_ARS = "ค่าประมาณจาก LINE Ads Adgroup Result Simulat
 # API v3.12.3 ARS simulation allowed bid types: CPC, CPF, CPM
 ARS_BID_TYPES = {"CPC", "CPF", "CPM"}
 
+# Live check 2026-10-25: ARS returns 422 invalidFields for every behaviors/purchaseIntents code
+# (include and exclude, GAIN_FRIENDS and VISIT_MY_WEBSITE), even codes used by live ad groups.
+# Only interests are accepted, so other advanced targeting keys are removed before simulating.
+ARS_ADVANCED_KEYS = {"interests"}
+NOTE_OMITTED = (
+    "ตัวจำลอง LINE ไม่รองรับเงื่อนไขพฤติกรรม/ความตั้งใจซื้อ จึงตัดออกก่อนจำลอง "
+    "ผลนี้กว้างกว่ากลุ่มจริง ให้ดูขนาดกลุ่มในหน้า Ads Manager"
+)
+
+
+def _strip_unsupported_advanced(targeting: dict[str, Any]) -> dict[str, list[str]]:
+    """Remove advanced targeting keys ARS rejects from targeting (a copy); return removed codes by key."""
+    omitted: dict[str, list[str]] = {}
+
+    def keep(group: Any) -> Any:
+        if not isinstance(group, dict):
+            return group
+        kept = {}
+        for key, codes in group.items():
+            if key in ARS_ADVANCED_KEYS:
+                kept[key] = codes
+            else:
+                omitted.setdefault(key, []).extend(codes if isinstance(codes, list) else [codes])
+        return kept or None
+
+    include = targeting.get("includeAdvancedTargetings")
+    if isinstance(include, list):
+        groups = [g for g in (keep(g) for g in include) if g]
+        if groups:
+            targeting["includeAdvancedTargetings"] = groups
+        else:
+            targeting.pop("includeAdvancedTargetings")
+    exclude = targeting.get("excludeAdvancedTargeting")
+    if isinstance(exclude, dict):
+        kept = keep(exclude)
+        if kept:
+            targeting["excludeAdvancedTargeting"] = kept
+        else:
+            targeting.pop("excludeAdvancedTargeting")
+    return omitted
+
 
 async def estimate_adset_reach(
     campaign_id: str,
@@ -81,6 +122,10 @@ async def estimate_adset_reach(
                 targeting_payload["targetingMode"] = "MANUAL"
                 adjusted.append("targetingMode AUTO→MANUAL (ARS รับเฉพาะ MANUAL)")
 
+        omitted = _strip_unsupported_advanced(targeting_payload)
+        if omitted:
+            adjusted.append(NOTE_OMITTED)
+
         body = clean_dict(
             {
                 "adaccountId": account_id,
@@ -131,6 +176,7 @@ async def estimate_adset_reach(
                 "request": body,
                 "note": NOTE_ARS,
                 **({"adjusted": adjusted} if adjusted else {}),
+                **({"omitted_for_simulation": omitted} if omitted else {}),
             }
         )
     except Exception as error:
