@@ -93,7 +93,7 @@ Cost per result = sum(spend) / sum(results ของ objective เดียว�
 
 `summary.avg_ctr` เป็นเปอร์เซ็นต์แล้ว ห้ามคูณ 100 ซ้ำ
 ไม่รวม Friends, Clicks, Installs และ Conversions เป็น “ผลลัพธ์รวม” เดียวกัน
-ไม่ใช้ CV/CPA/ROAS กับ objective ที่ไม่ใช่ CONVERSIONS
+ไม่ใช้ CV/CPA/ROAS กับ objective ที่ไม่ใช่ WEBSITE_CONVERSION
 Reach เป็น unique metric ห้ามบวกรายวัน/รายแคมเปญเพื่ออ้างว่าเป็น unique reach ทั้งบัญชี
 ถ้าข้อมูลไม่ครบ แสดงได้เฉพาะยอดที่ดึงได้พร้อมคำเตือนชัดเจน ห้ามเรียกว่า total ทั้งบัญชี
 
@@ -132,7 +132,7 @@ Dashboard เป็น **snapshot** ณ เวลาที่ดึงข้อ�
 ```
 Dashboard: 1–28 ก.ย. 2026 (UTC), ข้อมูลครบ ณ เวลาที่ดึง
 GAIN_FRIENDS: ใช้ ฿6,000 / เพื่อนใหม่ 400 / CPF ฿15
-WEBSITE_TRAFFIC: ใช้ ฿2,000 / คลิก 1,000 / CPC ฿2
+VISIT_MY_WEBSITE: ใช้ ฿2,000 / คลิก 1,000 / CPC ฿2
 กราฟรายวัน + ตาราง campaign/ad อยู่ใน Artifact
 ROAS: ไม่มีข้อมูลรายได้ จึงไม่แสดงค่า 0
 นี่เป็น snapshot; พิมพ์ “รีเฟรช dashboard” เมื่อต้องการข้อมูลใหม่ครับ

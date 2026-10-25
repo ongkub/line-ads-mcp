@@ -88,7 +88,7 @@ get_report(level="AD", start_date=start_date, end_date=end_date,
 | สิ่งที่ยังแยกไม่ได้ | ผลจาก creative/bid/offer กับ targeting ที่เปลี่ยนพร้อมกัน |
 
 - เปรียบเทียบต้นทุนเฉพาะ objective/result type เดียวกัน
-- CONVERSIONS ใช้ CPA; GAIN_FRIENDS ใช้ CPF ตาม metric dictionary
+- WEBSITE_CONVERSION ใช้ CPA; GAIN_FRIENDS ใช้ CPF ตาม metric dictionary
 - Traffic/Reach/Video/App ใช้ CPC/CPM/CPV/CPI ตาม objective ไม่บังคับแปลงเป็น CPA
 - ผลลัพธ์ 0/unknown คำนวณ cost per result ไม่ได้ ห้ามจัดให้เป็นต้นทุนศูนย์
 - อย่ากำหนด sample threshold ใหม่เอง ถ้า knowledge ไม่รองรับ ให้บอกข้อจำกัด

@@ -78,7 +78,7 @@ async def test_create_campaign_rejects_old_objective_values(monkeypatch):
     monkeypatch.setenv("LINE_ADS_ACCESS_KEY", "access")
     monkeypatch.setenv("LINE_ADS_SECRET_KEY", "secret")
 
-    for bad_objective in ("FRIEND_ADDED", "VISIT_MY_WEBSITE", "APP_INSTALLS", "VIDEO_VIEWS"):
+    for bad_objective in ("FRIEND_ADDED", "WEBSITE_VISIT", "APP_INSTALLS", "VIDEO_VIEWS"):
         result = await create_campaign(name="Bad", objective=bad_objective, start_date="2026-05-14T09:00:00+07:00")
         assert result["ok"] is False, f"Should reject {bad_objective}"
         assert "objective" in result["message"]
@@ -90,10 +90,14 @@ async def test_create_campaign_accepts_all_valid_objectives(monkeypatch):
     monkeypatch.setenv("LINE_ADS_SECRET_KEY", "secret")
     monkeypatch.setenv("LINE_ADS_AD_ACCOUNT_ID", "A123")
 
-    for obj in ("GAIN_FRIENDS", "WEBSITE_TRAFFIC", "CONVERSIONS", "REACH", "APP_INSTALL", "VIDEO_VIEW"):
+    for obj in ("GAIN_FRIENDS", "VISIT_MY_WEBSITE", "WEBSITE_CONVERSION", "REACH", "APP_INSTALL", "VIDEO_VIEW"):
         result = await create_campaign(name="Test", objective=obj, start_date="2026-05-14T09:00:00+07:00")
         assert result["ok"] is True, f"Should accept {obj}"
         assert result["payload"]["campaignObjective"] == obj
+    for legacy, real in (("WEBSITE_TRAFFIC", "VISIT_MY_WEBSITE"), ("CONVERSIONS", "WEBSITE_CONVERSION")):
+        result = await create_campaign(name="Test", objective=legacy, start_date="2026-05-14T09:00:00+07:00")
+        assert result["ok"] is True, f"Should accept legacy {legacy}"
+        assert result["payload"]["campaignObjective"] == real
 
 
 @pytest.mark.asyncio

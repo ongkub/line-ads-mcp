@@ -25,7 +25,7 @@
 | `cvr` | อัตรา conversion ต่อคลิก [API] | `Σcv / Σclick × 100` เป็น % |
 | `cpc` | ต้นทุนต่อคลิก [API] | `Σcost / Σclick` |
 | `cpm` | ต้นทุนต่อการแสดงผลหนึ่งพันครั้ง [API] | `Σcost / Σimp × 1,000` |
-| `cpa` | ต้นทุนต่อ conversion [API] | `Σcost / Σcv` สำหรับ CONVERSIONS |
+| `cpa` | ต้นทุนต่อ conversion [API] | `Σcost / Σcv` สำหรับ WEBSITE_CONVERSION |
 
 **ห้ามเฉลี่ย ratios รายแถว** รวมตัวตั้ง/ตัวหารก่อนคำนวณใหม่ทุกครั้ง; ไม่เฉลี่ย CTR/CVR/CPC/CPM/CPA/CPF ของวันหรือแคมเปญเข้าด้วยกัน [KPI; กติกาคำนวณข้างต้น]
 ตัวหาร 0 หรือไม่ทราบ → `None`/“คำนวณไม่ได้” ไม่ใช่ 0; คำนวณจากแถวที่ขาดได้เพียง “ค่าของข้อมูลที่มี” ห้ามเรียกว่าอัตรารวมทั้งช่วง [กติกาวิเคราะห์]
@@ -52,13 +52,15 @@
 | Objective | ผลลัพธ์และต้นทุนที่ใช้ | ข้อจำกัด |
 |---|---|---|
 | GAIN_FRIENDS | เพื่อนใหม่โดยประมาณจาก `click`; CPF = `Σcost/Σclick` [KPI] | `cv=0` เป็นปกติตาม convention repo ไม่ใช่หลักฐาน tracking เสีย; ไม่รับรองเพื่อนสุทธิหรือยอดขาย |
-| WEBSITE_TRAFFIC | คลิก, CTR, CPC [KPI] | ไม่ใช้ CV/CPA/ROAS ตัดสิน |
-| CONVERSIONS | `cv`, CPA, CVR; ROAS เมื่อมีรายได้ที่ตรวจสอบได้ [KPI] | ไม่มีรายได้ → ไม่คำนวณ ROAS |
+| VISIT_MY_WEBSITE | คลิก, CTR, CPC [KPI] | ไม่ใช้ CV/CPA/ROAS ตัดสิน |
+| WEBSITE_CONVERSION | `cv`, CPA, CVR; ROAS เมื่อมีรายได้ที่ตรวจสอบได้ [KPI] | ไม่มีรายได้ → ไม่คำนวณ ROAS |
 | REACH | Reach, CPM, Frequency เมื่อมี field [KPI] | `imp` ไม่ใช่ Reach; ห้ามบวก unique reach ข้ามวัน/กลุ่มเป็นคนไม่ซ้ำรวม |
 | APP_INSTALL | Installs, CPI เมื่อมี install metric [KPI] | ห้ามถือว่า click หรือ `cv` เป็น install โดยไม่มี mapping ยืนยัน |
 | VIDEO_VIEW | Views, CPV, completion ตาม field ที่มี [KPI] | `viewableImp` ไม่ใช่ยอดดูวิดีโอจนจบ |
 
-GAIN_FRIENDS ใช้ “เพื่อน ≈ click ตาม convention repo” ในสรุป และตรวจผลกับบัญชีจริงเมื่อจำเป็น; ไม่เปลี่ยน conversion ศูนย์ให้เป็นปัญหาหรือเรียกเพื่อนว่าลูกค้าที่ซื้อ [KPI; กติกาการสื่อสาร]
+ชื่อ objective ที่ API คืนจริง (ตรวจ 25 ต.ค. 2026): GAIN_FRIENDS, VISIT_MY_WEBSITE, WEBSITE_CONVERSION, REACH · WEBSITE_CONVERSION: ผลอาจอยู่ในคอลัมน์คอนเวอร์ชันแบบกำหนดเอง (เช่น "กดปุ่มแชทสอบถาม") ขณะที่ CV (All) = 0 → ใช้คอนเวอร์ชันที่กลุ่มโฆษณา "เพิ่มประสิทธิภาพแก่"
+
+GAIN_FRIENDS ใช้ “เพื่อน ≈ click” ในสรุป (ผู้เขียนยืนยัน 25 ต.ค. 2026: รายงานไม่มีคอลัมน์เพื่อนใหม่ และคิดเงินต่อการเพิ่มเพื่อน) และตรวจผลกับบัญชีจริงเมื่อจำเป็น; ไม่เปลี่ยน conversion ศูนย์ให้เป็นปัญหาหรือเรียกเพื่อนว่าลูกค้าที่ซื้อ [KPI; กติกาการสื่อสาร]
 
 ## Missing ต่างจาก zero
 

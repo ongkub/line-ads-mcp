@@ -187,8 +187,8 @@ MODE 5 เป็น snapshot ต้องขอ refresh ใหม่; MODE 6/7 �
 | พิมพ์ว่า | Objective |
 |---|---|
 | เพิ่มเพื่อน / Friend | GAIN_FRIENDS |
-| เข้าเว็บ / Website | WEBSITE_TRAFFIC |
-| Conversion | CONVERSIONS |
+| เข้าเว็บ / Website | VISIT_MY_WEBSITE |
+| Conversion | WEBSITE_CONVERSION |
 | Reach / การเข้าถึง | REACH |
 | ติดตั้งแอป | APP_INSTALL |
 | ดูวิดีโอ | VIDEO_VIEW |

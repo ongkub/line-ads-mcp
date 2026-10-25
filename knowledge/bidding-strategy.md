@@ -9,8 +9,8 @@
 | Objective | Bid Type | Bid Strategy | Budget ขั้นต่ำ/วัน |
 |---|---|---|---|
 | GAIN_FRIENDS | CPF | COST_CAP / LOWEST_COST | ฿100 |
-| WEBSITE_TRAFFIC | CPC | COST_CAP / LOWEST_COST | ฿100 |
-| CONVERSIONS | CPC | COST_CAP | ฿300 |
+| VISIT_MY_WEBSITE | CPC | COST_CAP / LOWEST_COST | ฿100 |
+| WEBSITE_CONVERSION | CPC | COST_CAP | ฿300 |
 | REACH | CPM | LOWEST_COST | ฿50 |
 | APP_INSTALL | CPC | COST_CAP / LOWEST_COST | ฿100 |
 | VIDEO_VIEW | CPV | LOWEST_COST | ฿50 |
@@ -24,7 +24,7 @@ Cost สำหรับ objective ยอดนิยม (ช่วงกลา�
 | Objective | Cost ปกติ |
 |---|---|
 | GAIN_FRIENDS | CPF ฿10-22 (ขึ้นกับ industry) |
-| WEBSITE_TRAFFIC (VISIT_MY_WEBSITE) | CPC ฿1.70-3.50 |
+| VISIT_MY_WEBSITE (VISIT_MY_WEBSITE) | CPC ฿1.70-3.50 |
 | REACH | CPM ฿6-8 |
 | VIDEO_VIEW | CPV ฿0.02-0.09 |
 | APP_INSTALL | CPC ฿0.90-3.70 |

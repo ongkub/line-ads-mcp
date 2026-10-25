@@ -13,8 +13,8 @@
 | Objective | CTR ดี | Cost ปกติ | Metric หลัก |
 |---|---:|---:|---|
 | GAIN_FRIENDS | 0.08–0.19% | CPF ฿8-20/friend | Clicks (=Friends), CPF |
-| WEBSITE_TRAFFIC | > 0.8% | CPC ฿2-6/click | Clicks, CPC, CTR |
-| CONVERSIONS | > 0.8% | CPA ขึ้นกับ margin | Conversions, CPA, CVR |
+| VISIT_MY_WEBSITE | > 0.8% | CPC ฿2-6/click | Clicks, CPC, CTR |
+| WEBSITE_CONVERSION | > 0.8% | CPA ขึ้นกับ margin | Conversions, CPA, CVR |
 | REACH | > 0.5% | CPM ฿20-80 | Reach, CPM, Frequency |
 | APP_INSTALL | > 0.8% | CPI ขึ้นกับ app category | Installs, CPI |
 | VIDEO_VIEW | > 3.0% video engagement | CPV ฿0.5-2/view | Views, CPV, completion |

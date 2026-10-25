@@ -9,8 +9,8 @@
 | Objective | แนะนำ | หมายเหตุ |
 |---|---|---|
 | GAIN_FRIENDS | Image 1:1 | Square เด่นใน feed และเหมาะกับ CTA เพิ่มเพื่อน |
-| WEBSITE_TRAFFIC | Image 1.91:1 หรือ Carousel | Carousel ใช้เมื่อมีหลาย pain point/offer |
-| CONVERSIONS | Image 1:1 หรือ Carousel | ใช้ format ที่เห็น offer และ proof ชัด |
+| VISIT_MY_WEBSITE | Image 1.91:1 หรือ Carousel | Carousel ใช้เมื่อมีหลาย pain point/offer |
+| WEBSITE_CONVERSION | Image 1:1 หรือ Carousel | ใช้ format ที่เห็น offer และ proof ชัด |
 | REACH | Image 1.91:1 | เหมาะกับ reach/CPM และ message กว้าง |
 | APP_INSTALL | Image 1:1 หรือ Video 1:1 | แสดง app screen หรือ use case สั้น ๆ |
 | VIDEO_VIEW | Video 1:1 หรือ 16:9 | แนะนำ 15-30 วินาทีสำหรับ performance |

@@ -487,7 +487,7 @@ line-ads-mcp
 
 `estimate_adset_reach` รองรับ targeting params แบบ `create_adset` หรือ `targeting` และ optional `adset_id`, `bid_amount`, `bid_strategy`; แจ้ง absent/invalid fields โดยไม่เดาตัวเลขเงิน
 
-รายงานคืน `paging.complete` (true/false) และ `date_basis: "UTC"` ต้องตรวจความครบถ้วนก่อนสรุป วันรายงานเป็น UTC; summary keys คือ `total_spend`, `total_clicks`, `total_impressions`, `total_cv`, `avg_ctr` (%), `avg_cpc`, `avg_cpm` ค่าเฉลี่ยเป็น `None` เมื่อไม่มีตัวหาร ไม่ใช้ CV/CPA/ROAS วิเคราะห์ objective ที่ไม่ใช่ CONVERSIONS
+รายงานคืน `paging.complete` (true/false) และ `date_basis: "UTC"` ต้องตรวจความครบถ้วนก่อนสรุป วันรายงานเป็น UTC; summary keys คือ `total_spend`, `total_clicks`, `total_impressions`, `total_cv`, `avg_ctr` (%), `avg_cpc`, `avg_cpm` ค่าเฉลี่ยเป็น `None` เมื่อไม่มีตัวหาร ไม่ใช้ CV/CPA/ROAS วิเคราะห์ objective ที่ไม่ใช่ WEBSITE_CONVERSION
 
 Cap ใช้เลขและช่วงวันที่ที่เจ้าของระบุเท่านั้น: `exceeded` เมื่อ spend > cap อย่างเคร่งครัด, เท่ากับ cap ยังเป็น `within_cap`, `indeterminate` เมื่อข้อมูลไม่ครบต้องบอกว่ายังสรุปไม่ได้ ไม่ auto-pause
 
@@ -607,8 +607,8 @@ code จาก [knowledge/interest-detail-app-behavior.md](knowledge/interest-de
 
 ```
 GAIN_FRIENDS     ← เพิ่มเพื่อน LINE OA (ยืนยันจาก real API)
-WEBSITE_TRAFFIC  ← เข้าเว็บไซต์
-CONVERSIONS
+VISIT_MY_WEBSITE  ← เข้าเว็บไซต์
+WEBSITE_CONVERSION
 REACH
 APP_INSTALL
 VIDEO_VIEW

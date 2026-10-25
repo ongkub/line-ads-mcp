@@ -22,7 +22,7 @@
 2. เมื่อวานใช้ `get_daily_report` (ระดับ AD เป็น default); ช่วงอื่นใช้ `get_report(level="CAMPAIGN"|"ADGROUP"|"AD", start_date=..., end_date=..., campaign_id=None, adgroup_id=None, fetch_all=True, by_day=False)` หรือ `get_weekly_report(by_day=False)`
 3. ต้องการรายวันใช้ `by_day=True` = หนึ่งแถวต่อวัน×entity สูงสุด 93 วันต่อคำขอ แบ่งช่วงเมื่อเกิน ตรวจ `paging.complete` ก่อนสรุป
 4. บอกช่วงวันที่และ `date_basis: "UTC"` เสมอ วันรายงานไม่ใช่ Asia/Bangkok; เวลาแจ้งเตือนอาจเป็น Asia/Bangkok (+07:00) แต่ห้ามเปลี่ยนป้ายวันของ API
-5. สรุปตาม objective เท่านั้น: GAIN_FRIENDS ดู CPF/Friends, WEBSITE_TRAFFIC ดู CTR/CPC, VIDEO_VIEW ดู VTR/CPV, REACH ดู CPM/Reach/Frequency, APP_INSTALL ดู CPI และ CONVERSIONS ดู CV/CPA/ROAS เมื่อมีข้อมูล ห้ามใช้ CV/CPA/ROAS ตัดสิน objective อื่น
+5. สรุปตาม objective เท่านั้น: GAIN_FRIENDS ดู CPF/Friends, VISIT_MY_WEBSITE ดู CTR/CPC, VIDEO_VIEW ดู VTR/CPV, REACH ดู CPM/Reach/Frequency, APP_INSTALL ดู CPI และ WEBSITE_CONVERSION ดู CV/CPA/ROAS เมื่อมีข้อมูล ห้ามใช้ CV/CPA/ROAS ตัดสิน objective อื่น
 
 Summary keys ของ `get_report`: `total_spend`, `total_clicks`, `total_impressions`, `total_cv`, `avg_ctr` (%), `avg_cpc`, `avg_cpm` ค่า `None` เมื่อไม่มีตัวหารให้แสดง “คำนวณไม่ได้” ไม่แทนด้วยศูนย์ ไม่เดา metrics ที่ response ไม่มี
 

@@ -123,7 +123,7 @@ get_report(level="AD", start_date=..., end_date=..., campaign_id=[ID], fetch_all
 
 โหลด `knowledge/kpi-benchmarks.md` เฉพาะตอนวิเคราะห์ benchmark
 
-วิเคราะห์ตาม objective เท่านั้น: GAIN_FRIENDS ใช้ CPF/Friends, WEBSITE_TRAFFIC ใช้ CTR/CPC, VIDEO_VIEW ใช้ VTR/CPV, REACH ใช้ CPM/Reach/Frequency, APP_INSTALL ใช้ CPI ส่วน CV/CPA/ROAS ใช้เฉพาะ CONVERSIONS และเฉพาะ metrics ที่ response มีจริง
+วิเคราะห์ตาม objective เท่านั้น: GAIN_FRIENDS ใช้ CPF/Friends, VISIT_MY_WEBSITE ใช้ CTR/CPC, VIDEO_VIEW ใช้ VTR/CPV, REACH ใช้ CPM/Reach/Frequency, APP_INSTALL ใช้ CPI ส่วน CV/CPA/ROAS ใช้เฉพาะ WEBSITE_CONVERSION และเฉพาะ metrics ที่ response มีจริง
 
 ### Sequential Check
 

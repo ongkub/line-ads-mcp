@@ -129,8 +129,8 @@ Hard stop:
 | User พูดว่า | MCP/API objective |
 |---|---|
 | เพิ่มเพื่อน OA | `GAIN_FRIENDS` |
-| เข้าเว็บ | `WEBSITE_TRAFFIC` |
-| Conversion | `CONVERSIONS` |
+| เข้าเว็บ | `VISIT_MY_WEBSITE` |
+| Conversion | `WEBSITE_CONVERSION` |
 | Reach | `REACH` |
 | ติดตั้งแอป | `APP_INSTALL` |
 | ดูวิดีโอ | `VIDEO_VIEW` |

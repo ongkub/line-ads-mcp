@@ -73,7 +73,7 @@ TOOLS: dict[str, tuple[str, dict[str, Any], ToolFn]] = {
                 "name": {"type": "string"},
                 "objective": {
                     "type": "string",
-                    "enum": ["APP_INSTALL", "CONVERSIONS", "GAIN_FRIENDS", "REACH", "VIDEO_VIEW", "WEBSITE_TRAFFIC"],
+                    "enum": ["APP_INSTALL", "GAIN_FRIENDS", "REACH", "VIDEO_VIEW", "VISIT_MY_WEBSITE", "WEBSITE_CONVERSION"],
                 },
                 "ad_account_id": {"type": ["string", "null"], "default": None},
                 "daily_budget": {
@@ -593,7 +593,7 @@ TOOLS: dict[str, tuple[str, dict[str, Any], ToolFn]] = {
                 "campaign_id": {"type": "string"},
                 "campaign_objective": {
                     "type": "string",
-                    "enum": ["APP_INSTALL", "CONVERSIONS", "GAIN_FRIENDS", "REACH", "VIDEO_VIEW", "WEBSITE_TRAFFIC"],
+                    "enum": ["APP_INSTALL", "GAIN_FRIENDS", "REACH", "VIDEO_VIEW", "VISIT_MY_WEBSITE", "WEBSITE_CONVERSION"],
                 },
                 "daily_budget": {"type": "number", "description": "จำนวนเงินหน่วย THB ต้องรับค่าจากผู้ใช้ ห้ามเดา"},
                 "bid_type": {"type": "string", "enum": ["CPC", "CPF", "CPM"]},

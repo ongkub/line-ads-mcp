@@ -12,7 +12,7 @@ from .adsets import (
     BID_TYPES,
     _build_targeting,
 )
-from .campaigns import OBJECTIVES
+from .campaigns import OBJECTIVES, normalize_objective
 from .common import clean_dict, handle_tool_error, ok, require_one_of, to_micro
 
 NOTE_ARS = "ค่าประมาณจาก LINE Ads Adgroup Result Simulator ไม่ใช่ขนาดกลุ่มที่การันตี"
@@ -46,6 +46,7 @@ async def estimate_adset_reach(
     POSTs to /adaccounts/{id}/simulation/ars with camelCase parameters.
     """
     try:
+        campaign_objective = normalize_objective(campaign_objective)
         require_one_of(campaign_objective, OBJECTIVES, "campaign_objective")
         require_one_of(bid_type, ARS_BID_TYPES, "bid_type")
         require_one_of(auto_bid_type, AUTO_BID_TYPES, "auto_bid_type")

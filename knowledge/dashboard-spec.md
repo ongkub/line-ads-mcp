@@ -20,8 +20,8 @@
 | Objective | ป้าย KPI ภาษาไทย | ข้อมูลที่ต้องมี |
 |---|---|---|
 | GAIN_FRIENDS | เพื่อนใหม่โดยประมาณ, ต้นทุนต่อเพื่อน (CPF), อัตราคลิก | click; CPF ตาม convention repo ไม่ใช้ cv [M][K] |
-| WEBSITE_TRAFFIC | คลิก, ต้นทุนต่อคลิก (CPC), อัตราคลิก (CTR) | click, imp, spend [M][K] |
-| CONVERSIONS | คอนเวอร์ชัน, ต้นทุนต่อคอนเวอร์ชัน (CPA), อัตราคอนเวอร์ชัน (CVR) | cv, click, spend; เพิ่ม ROAS เฉพาะมีรายได้ยืนยัน [M][K] |
+| VISIT_MY_WEBSITE | คลิก, ต้นทุนต่อคลิก (CPC), อัตราคลิก (CTR) | click, imp, spend [M][K] |
+| WEBSITE_CONVERSION | คอนเวอร์ชัน, ต้นทุนต่อคอนเวอร์ชัน (CPA), อัตราคอนเวอร์ชัน (CVR) | cv, click, spend; เพิ่ม ROAS เฉพาะมีรายได้ยืนยัน [M][K] |
 | REACH | การเข้าถึง, ต้นทุนต่อพันครั้ง (CPM), ความถี่ | Reach/Frequency จริง; ไม่มีให้ “ไม่มีข้อมูล” ไม่แทนด้วย imp [M][K] |
 | APP_INSTALL | ติดตั้งแอป, ต้นทุนต่อติดตั้ง (CPI) | install metric จริง; ไม่ใช้ click แทน [M][K] |
 | VIDEO_VIEW | ดูวิดีโอ, ต้นทุนต่อการดู (CPV), อัตราดูจบ | นิยาม view/completion ของ field จริง [M][K] |

@@ -10,15 +10,25 @@ from .common import clean_dict, dry_run_response, handle_tool_error, ok, require
 from .paging import fetch_all_pages
 from .change_log import track_change, write_entity
 
-# Confirmed from real API smoke test: response uses campaignObjective: GAIN_FRIENDS
+# Confirmed from real accounts (2026-10-25): GAIN_FRIENDS, VISIT_MY_WEBSITE, WEBSITE_CONVERSION, REACH.
+# APP_INSTALL / VIDEO_VIEW are unverified. Older names used by this repo are accepted as aliases.
 OBJECTIVES = {
     "GAIN_FRIENDS",
-    "WEBSITE_TRAFFIC",
-    "CONVERSIONS",
+    "VISIT_MY_WEBSITE",
+    "WEBSITE_CONVERSION",
     "REACH",
     "APP_INSTALL",
     "VIDEO_VIEW",
 }
+OBJECTIVE_ALIASES = {
+    "WEBSITE_TRAFFIC": "VISIT_MY_WEBSITE",
+    "CONVERSIONS": "WEBSITE_CONVERSION",
+}
+
+
+def normalize_objective(objective: str) -> str:
+    """Map legacy objective names to the values the LINE Ads API returns."""
+    return OBJECTIVE_ALIASES.get(objective, objective)
 STATUSES = {"ACTIVE", "PAUSED"}
 CAMPAIGN_STATUS_FILTER = {"ACTIVE", "PAUSED", "REMOVED"}
 
@@ -76,6 +86,7 @@ async def create_campaign(
 ) -> dict[str, Any]:
     try:
         require_one_of(status, {"PAUSED", "ACTIVE"}, "status")
+        objective = normalize_objective(objective)
         require_one_of(objective, OBJECTIVES, "objective")
         if not start_date:
             raise LineAdsAPIError(

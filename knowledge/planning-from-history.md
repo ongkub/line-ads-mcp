@@ -58,7 +58,7 @@ AI ดึงประวัติผ่าน MCP เอง เริ่มจ�
 ## แบ่งงบจาก CPF/CPA จริง พร้อมเงินทดสอบ
 
 ใช้เฉพาะงบรวม/ระยะเวลาที่ผู้ใช้บอก เป็น **ข้อเสนอรออนุมัติ**; ห้ามดึงงบเก่ามาถือเป็นงบใหม่ และห้ามตั้ง bid cap จากค่าเฉลี่ยย้อนหลังเอง [C][B]
-CPF ใช้ spend/click ตาม repo; CPA ใช้ spend/cv เฉพาะ CONVERSIONS; Traffic/Reach/Video/App ใช้ KPI ตาม objective ไม่แปลงเป็น CPA เอง [M][K]
+CPF ใช้ spend/click ตาม repo; CPA ใช้ spend/cv เฉพาะ WEBSITE_CONVERSION; Traffic/Reach/Video/App ใช้ KPI ตาม objective ไม่แปลงเป็น CPA เอง [M][K]
 
 ขั้นตอนต่อไปนี้เป็น **heuristic เสนอ split** ไม่ใช่ optimizer หรือกฎเพิ่มเงินอัตโนมัติ:
 
