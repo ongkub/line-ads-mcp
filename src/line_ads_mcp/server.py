@@ -463,7 +463,7 @@ TOOLS: dict[str, tuple[str, dict[str, Any], ToolFn]] = {
         list_ads,
     ),
     "get_report": (
-        "อ่านอย่างเดียว: รายงานตามระดับและช่วงวันที่ UTC ดึงทุกหน้าเป็นค่าเริ่มต้น ตรวจ paging.complete; by_day=True ดึงแยกวัน×entity สูงสุด 93 วัน",
+        "อ่านอย่างเดียว: รายงานตามระดับและช่วงวันที่ UTC ดึงทุกหน้าเป็นค่าเริ่มต้น ตรวจ paging.complete; by_day=True ดึงแยกวัน×entity สูงสุด 93 วัน; อ่านผลตาม objective: GAIN_FRIENDS ไม่มีคอลัมน์เพื่อน ใช้ click แทนจำนวนเพื่อนใหม่ (CPF ≈ cost ÷ click), WEBSITE_CONVERSION ดู summary.conversion_events; cost เป็นบาท",
         schema(
             {
                 "level": {"type": "string", "enum": ["AD", "ADGROUP", "CAMPAIGN"]},
