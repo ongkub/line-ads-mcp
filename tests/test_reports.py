@@ -35,6 +35,7 @@ def test_summarize_rows():
         "total_clicks": 60,
         "total_impressions": 1500,
         "total_cv": 0,
+        "conversion_events": {},
         "avg_ctr": 4.0,
         "avg_cpc": 2.01,
         "avg_cpm": 80.33,
@@ -279,3 +280,45 @@ async def test_get_weekly_report_forwards_by_day(monkeypatch):
     yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
     seven_days_ago = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%d")
     assert data["date_range"] == {"start": seven_days_ago, "end": yesterday}
+
+
+@pytest.mark.parametrize("total_cv", [0, 5])
+def test_summary_event_counts_exclude_rates_values_duplicates_and_zeros(total_cv):
+    summary = _summarize_rows([
+        {"cv": total_cv, "cvViewItemDetail": "10", "cvPurchase": 2, "cvZero": 0,
+         "cvrViewItemDetail": 0.5, "cpaViewItemDetail": 10,
+         "cvViewItemDetailValue": 1000, "cvViewItemDetailWithEv": 40},
+        {"statistics": {"cv": 0, "cvViewItemDetail": 19, "cvPurchase": 3,
+                        "cvZero": 0, "cvNull": None, "cvValuePurchase": 500}},
+    ])
+    assert summary["total_cv"] == total_cv
+    assert summary["conversion_events"] == {"cvViewItemDetail": 29, "cvPurchase": 5}
+    assert ("cv_note" in summary) is (total_cv == 0)
+    if total_cv == 0:
+        assert summary["cv_note"] == "cv รวมเป็น 0 แต่มีคอนเวอร์ชันรายอีเวนต์ — อ่านคอลัมน์อีเวนต์ที่แคมเปญตั้งไว้ (เช่น cvViewItemDetail)"
+
+
+def test_summary_event_no_double_count_across_nested_and_flat():
+    summary = _summarize_rows([
+        {"cv": 0, "cvPurchase": 3, "statistics": {"cvPurchase": 3}},
+        {"cv": 0, "cvPurchase": None, "statistics": {"cvPurchase": 2}},
+    ])
+    assert summary["conversion_events"] == {"cvPurchase": 5}
+
+
+@pytest.mark.parametrize("rows", [[], [{"cv": 0}], [{"cv": 0, "cvPurchase": 0}]])
+def test_summary_no_cv_note_without_event_counts(rows):
+    summary = _summarize_rows(rows)
+    assert summary["conversion_events"] == {}
+    assert "cv_note" not in summary
+
+
+async def test_get_report_surfaces_conversion_events(monkeypatch):
+    async def get(self, path, params=None):
+        return {"datas": [{"campaignId": 123, "statistics": {"cv": 0, "cvViewItemDetail": 29}}]}
+
+    monkeypatch.setattr(LineAdsClient, "get", get)
+    result = await get_report("CAMPAIGN", "2026-10-01", "2026-10-25", fetch_all=False)
+    assert result["ok"] is True
+    assert result["data"]["summary"]["conversion_events"] == {"cvViewItemDetail": 29}
+    assert result["data"]["summary"]["cv_note"]

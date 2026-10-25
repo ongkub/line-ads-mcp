@@ -111,13 +111,20 @@ async def test_all_real_writes_log_once(monkeypatch, tmp_path, tool, arguments, 
 
 
 @pytest.mark.parametrize("tool,arguments,entity_type,entity_id", WRITES)
-async def test_dry_runs_never_log_or_create_client(monkeypatch, tmp_path, tool, arguments, entity_type, entity_id):
+async def test_dry_runs_never_log_or_write(monkeypatch, tmp_path, tool, arguments, entity_type, entity_id):
     arguments = media_arguments(tool, arguments, tmp_path)
 
     def forbidden(*args, **kwargs):
-        pytest.fail("dry runs must not create a client or call append_change")
+        pytest.fail("dry runs must not write or call append_change")
 
-    monkeypatch.setattr(LineAdsClient, "__init__", forbidden)
+    async def read(self, path, params=None):
+        return {"datas": [{"id": params["ids"]}]}
+
+    if entity_id is None:
+        monkeypatch.setattr(LineAdsClient, "__init__", forbidden)
+    else:
+        monkeypatch.setattr(LineAdsClient, "get", read)
+        monkeypatch.setattr(LineAdsClient, "post", forbidden)
     monkeypatch.setattr(change_log, "append_change", forbidden)
     result = await tool(**arguments, workspace_dir=str(tmp_path))
     assert result["dry_run"] is True

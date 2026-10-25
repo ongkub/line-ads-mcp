@@ -4,12 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from line_ads_mcp.client import LineAdsClient, LineAdsConfig, resolve_ad_account_id
+from line_ads_mcp.client import LineAdsAPIError, LineAdsClient, LineAdsConfig, resolve_ad_account_id
 
 from .adsets import (
     AUTO_BID_TYPES,
     BID_STRATEGIES,
-    BID_TYPES,
     _build_targeting,
 )
 from .campaigns import OBJECTIVES, normalize_objective
@@ -53,22 +52,34 @@ async def estimate_adset_reach(
         if bid_strategy is not None:
             require_one_of(bid_strategy, BID_STRATEGIES, "bid_strategy")
 
+        if bid_amount is None and bid_strategy != "LOWEST_COST":
+            raise LineAdsAPIError(
+                400,
+                'ต้องระบุ bid_amount เมื่อ bid_strategy เป็น COST_CAP หรือไม่ระบุ หรือใช้ bid_strategy="LOWEST_COST"',
+                "VALIDATION_ERROR",
+            )
+
         config = LineAdsConfig.from_env()
         account_id = resolve_ad_account_id(ad_account_id, config)
 
+        adjusted = []
         if targeting is None:
             effective_age_min = 20 if age_min is None else age_min
             targeting_payload = _build_targeting(
                 age_min=effective_age_min,
                 age_max=age_max,
                 country=country,
+                targeting_mode="MANUAL",
                 genders=genders,
                 interest_codes=interest_codes,
                 excluded_audience_ids=excluded_audience_ids,
                 custom_audience_ids=custom_audience_ids,
             )
         else:
-            targeting_payload = targeting
+            targeting_payload = dict(targeting)
+            if targeting_payload.get("targetingMode") != "MANUAL":
+                targeting_payload["targetingMode"] = "MANUAL"
+                adjusted.append("targetingMode AUTO→MANUAL (ARS รับเฉพาะ MANUAL)")
 
         body = clean_dict(
             {
@@ -119,6 +130,7 @@ async def estimate_adset_reach(
                 "ignored_fields": ignored_fields,
                 "request": body,
                 "note": NOTE_ARS,
+                **({"adjusted": adjusted} if adjusted else {}),
             }
         )
     except Exception as error:

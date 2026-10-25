@@ -13,7 +13,7 @@ from typing import Any
 
 from line_ads_mcp.client import LineAdsAPIError, LineAdsClient, LineAdsConfig
 
-from .common import handle_tool_error, ok
+from .common import dry_run_response, handle_tool_error, ok
 from .entities import fetch_entity
 
 _current_change: ContextVar[dict[str, Any] | None] = ContextVar("line_ads_change", default=None)
@@ -126,6 +126,40 @@ def merge_update_body(before: dict[str, Any], changes: dict[str, Any]) -> dict[s
         else:
             body[key] = value
     return body
+
+
+async def preview_update(
+    config: LineAdsConfig,
+    account_id: str,
+    entity_type: str,
+    action: str,
+    endpoint: str,
+    payload: dict[str, Any],
+    entity_id: str,
+) -> dict[str, Any]:
+    """Preview the same merged body as a real update, using reads only.
+
+    An unavailable current entity must not prevent reviewing the partial payload.
+    """
+    result = dry_run_response(action, endpoint, payload)
+    try:
+        async with LineAdsClient(config) as client:
+            before = await fetch_entity(client, account_id, entity_type, entity_id)
+        if before is None:
+            raise LineAdsAPIError(404, f"ไม่พบ {entity_type} ID: {entity_id}", "NOT_FOUND")
+        full_body = merge_update_body(before, payload)
+        changes = {}
+        for key in payload:
+            change = {"before": before.get(key), "after": full_body[key]}
+            if key.endswith("Micro"):
+                for side in ("before", "after"):
+                    value = change[side]
+                    change[f"{side}_thb"] = value / 1_000_000 if isinstance(value, (int, float)) else None
+            changes[key] = change
+        result.update(changes=changes, full_body=full_body)
+    except Exception as error:
+        result["preview_error"] = str(error)
+    return result
 
 
 def _snapshot(row: dict[str, Any]) -> dict[str, Any]:

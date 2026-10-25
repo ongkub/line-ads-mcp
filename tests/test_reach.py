@@ -101,6 +101,7 @@ async def test_targeting_identical_to_create_adset_dry_run(monkeypatch):
         campaign_id="camp-123",
         campaign_objective="GAIN_FRIENDS",
         daily_budget=100,
+        bid_strategy="LOWEST_COST",
         bid_type="CPF",
         auto_bid_type="FRIEND",
         **params,
@@ -134,7 +135,7 @@ async def test_targeting_identical_to_create_adset_dry_run(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_raw_targeting_passthrough(monkeypatch):
+async def test_raw_targeting_adjusted_without_mutating_caller(monkeypatch):
     calls = []
 
     async def mock_post(self, path: str, body: dict[str, Any]):
@@ -157,12 +158,15 @@ async def test_raw_targeting_passthrough(monkeypatch):
         campaign_id="camp-1",
         campaign_objective="CONVERSIONS",
         daily_budget=100,
+        bid_strategy="LOWEST_COST",
         bid_type="CPC",
         auto_bid_type="CLICK",
         targeting=raw_targeting,
     )
     assert res["ok"] is True
-    assert calls[0][1]["targeting"] == raw_targeting
+    assert raw_targeting["targetingMode"] == "CUSTOM"
+    assert calls[0][1]["targeting"] == {**raw_targeting, "targetingMode": "MANUAL"}
+    assert res["data"]["adjusted"] == ["targetingMode AUTO→MANUAL (ARS รับเฉพาะ MANUAL)"]
 
 
 @pytest.mark.asyncio
@@ -180,6 +184,7 @@ async def test_invalid_enum_rejected_before_any_request(monkeypatch):
         campaign_id="camp-1",
         campaign_objective="INVALID_OBJ",
         daily_budget=100,
+        bid_strategy="LOWEST_COST",
         bid_type="CPC",
         auto_bid_type="CLICK",
     )
@@ -192,6 +197,7 @@ async def test_invalid_enum_rejected_before_any_request(monkeypatch):
         campaign_id="camp-1",
         campaign_objective="GAIN_FRIENDS",
         daily_budget=100,
+        bid_strategy="LOWEST_COST",
         bid_type="CPV",
         auto_bid_type="FRIEND",
     )
@@ -204,6 +210,7 @@ async def test_invalid_enum_rejected_before_any_request(monkeypatch):
         campaign_id="camp-1",
         campaign_objective="GAIN_FRIENDS",
         daily_budget=100,
+        bid_strategy="LOWEST_COST",
         bid_type="CPF",
         auto_bid_type="INVALID_AUTO_BID",
     )
@@ -242,6 +249,7 @@ async def test_missing_reach_handled(monkeypatch):
         campaign_id="camp-123",
         campaign_objective="GAIN_FRIENDS",
         daily_budget=100,
+        bid_strategy="LOWEST_COST",
         bid_type="CPF",
         auto_bid_type="FRIEND",
     )
@@ -266,6 +274,7 @@ async def test_api_error_passthrough(monkeypatch):
         campaign_id="camp-123",
         campaign_objective="GAIN_FRIENDS",
         daily_budget=10,
+        bid_strategy="LOWEST_COST",
         bid_type="CPF",
         auto_bid_type="FRIEND",
     )
@@ -273,3 +282,46 @@ async def test_api_error_passthrough(monkeypatch):
     assert res["status_code"] == 400
     assert res["error_code"] == "BUDGET_TOO_LOW"
     assert "Daily budget must be higher" in res["message"]
+
+
+@pytest.mark.parametrize("targeting", [None, {"targetingMode": "AUTO", "country": "TH"},
+                                      {"country": "TH"}, {"targetingMode": "MANUAL"}])
+async def test_ars_always_uses_manual(monkeypatch, targeting):
+    calls = []
+
+    async def post(self, path, body):
+        calls.append(body)
+        return {"reach": [1, 2]}
+
+    monkeypatch.setattr(LineAdsClient, "post", post)
+    original = dict(targeting) if targeting is not None else None
+    result = await estimate_adset_reach("c1", "REACH", 100, "CPM", "REACH",
+                                        bid_strategy="LOWEST_COST", targeting=targeting)
+    assert result["ok"] is True
+    assert calls[0]["targeting"]["targetingMode"] == "MANUAL"
+    assert "bidAmountMicro" not in calls[0]
+    assert targeting == original
+    adjusted = targeting is not None and targeting.get("targetingMode") != "MANUAL"
+    assert ("adjusted" in result["data"]) is adjusted
+
+
+@pytest.mark.parametrize("bid_strategy,bid_amount,valid", [
+    (None, None, False), ("COST_CAP", None, False), ("LOWEST_COST", None, True),
+    (None, 5, True), ("COST_CAP", 5, True),
+])
+async def test_ars_bid_requirement_before_http(monkeypatch, bid_strategy, bid_amount, valid):
+    calls = []
+
+    async def post(self, path, body):
+        calls.append(body)
+        return {}
+
+    monkeypatch.setattr(LineAdsClient, "post", post)
+    result = await estimate_adset_reach("c1", "GAIN_FRIENDS", 100, "CPF", "FRIEND",
+                                        bid_strategy=bid_strategy, bid_amount=bid_amount)
+    assert result["ok"] is valid
+    assert len(calls) == int(valid)
+    if not valid:
+        assert result["status_code"] == 400
+        assert result["error_code"] == "VALIDATION_ERROR"
+        assert result["message"] == 'ต้องระบุ bid_amount เมื่อ bid_strategy เป็น COST_CAP หรือไม่ระบุ หรือใช้ bid_strategy="LOWEST_COST"'

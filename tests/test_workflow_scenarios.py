@@ -133,7 +133,8 @@ async def test_ch3_optimizer(fake_api):
     assert changed["readback"]["dailyBudgetMicro"] == 250_000_000
     before = len(fake_api["calls"])
     assert (await pause_ad("a1"))["dry_run"] is True
-    assert len(fake_api["calls"]) == before
+    assert len(fake_api["calls"]) == before + 1
+    assert fake_api["calls"][-1][0] == "GET"
     paused = await pause_ad("a1", dry_run=False)
     assert paused["readback_ok"] is True
 
@@ -154,7 +155,7 @@ async def test_ch4_dashboard(fake_api):
 async def test_ch5_audience_advisor(fake_api):
     await list_adsets()
     await list_audiences()
-    result = await estimate_adset_reach("c1", "GAIN_FRIENDS", 100, "CPF", "FRIEND", custom_audience_ids=["ready"], excluded_audience_ids=["excluded"])
+    result = await estimate_adset_reach("c1", "GAIN_FRIENDS", 100, "CPF", "FRIEND", bid_strategy="LOWEST_COST", custom_audience_ids=["ready"], excluded_audience_ids=["excluded"])
     assert result["data"]["reach"] == {"min": 1000, "max": 2000}
     assert result["data"]["request"]["targeting"]["customAudienceIds"] == ["ready"]
     posts = [c[1] for c in fake_api["calls"] if c[0] == "POST"]

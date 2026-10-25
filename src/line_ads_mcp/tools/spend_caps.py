@@ -92,7 +92,7 @@ async def check_spend_cap(
             "campaign_id": campaign_id,
             "data_complete": complete,
             "per_campaign": per_campaign,
-            "cost_unit_note": "ค่า cost จากรายงาน LINE Ads (สมมติเป็นบาท — ยืนยันกับบัญชีจริงก่อนเผยแพร่)",
+            "cost_unit_note": "ค่า cost จากรายงาน LINE Ads เป็นบาท (THB) — ตรวจกับงบรายวันของบัญชีจริง 25 ต.ค. 2026",
             "date_basis": "UTC",
         }
         if missing_cost:

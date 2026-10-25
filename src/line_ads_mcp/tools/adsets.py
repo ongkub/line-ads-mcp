@@ -8,7 +8,7 @@ from line_ads_mcp.client import LineAdsAPIError, LineAdsClient, LineAdsConfig, r
 
 from .common import clean_dict, dry_run_response, handle_tool_error, ok, require_one_of, to_micro
 from .paging import fetch_all_pages
-from .change_log import track_change, write_entity
+from .change_log import preview_update, track_change, write_entity
 
 STATUSES = {"ACTIVE", "PAUSED"}
 ADSET_STATUS_FILTER = {"ACTIVE", "PAUSED", "REMOVED"}
@@ -327,7 +327,7 @@ async def update_adset(
         })
         endpoint = f"/adaccounts/{account_id}/adgroups/{adset_id}"
         if dry_run:
-            return dry_run_response("update_adset", endpoint, payload)
+            return await preview_update(config, account_id, "adset", "update_adset", endpoint, payload, adset_id)
         return await write_entity(config, account_id, "adset", endpoint, payload, adset_id)
     except Exception as error:
         return handle_tool_error(error)

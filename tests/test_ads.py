@@ -242,3 +242,33 @@ async def test_upload_media_accepts_video_over_old_500mb_limit(tmp_path):
 
     assert result["ok"] is True
     assert result["payload"]["media_type"] == "VIDEO"
+
+
+@pytest.mark.parametrize("extension,data,expected", [
+    ("png", {"object": {"obsHash": "image-obs-hash", "id": 123}}, "image-obs-hash"),
+    ("mp4", {"object": {"obsHash": "video-obs-hash"}}, "video-obs-hash"),
+    ("mp4", {"object": {"id": 123}}, None),
+    ("png", {"object": None}, None),
+    ("mp4", {"id": 123}, None),
+])
+async def test_upload_media_exposes_obs_hash(monkeypatch, tmp_path, extension, data, expected):
+    from line_ads_mcp.client import LineAdsClient
+
+    media = tmp_path / f"upload.{extension}"
+    media.write_bytes(b"test media")
+    calls = []
+
+    async def request(self, method, path, **kwargs):
+        calls.append((method, path))
+        assert kwargs["files"]["mediaType"] == (None, "IMAGE" if extension == "png" else "VIDEO")
+        return data
+
+    monkeypatch.setattr(LineAdsClient, "request", request)
+    result = await upload_media(str(media), dry_run=False)
+    assert result["ok"] is True
+    assert result["data"] == data
+    assert calls == [("POST", "/adaccounts/A01887296807/media/upload")]
+    if expected is None:
+        assert "image_hash" not in result
+    else:
+        assert result["image_hash"] == expected

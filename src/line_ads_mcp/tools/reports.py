@@ -68,8 +68,16 @@ def _summarize_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
     imp_vals: list[int] = []
     cv_vals: list[int] = []
     missing_metrics: set[str] = set()
+    event_totals: dict[str, int] = {}
 
     for row in rows:
+        stats = row.get("statistics") if isinstance(row.get("statistics"), dict) else {}
+        for key in row.keys() | stats.keys():
+            if (key.startswith("cv") and key != "cv" and not key.startswith("cvr")
+                    and "Value" not in key and not key.endswith("WithEv")):
+                value = _metric(row, key)
+                if value is not None:
+                    event_totals[key] = event_totals.get(key, 0) + int(value)
         s = _metric(row, "spend", "cost")
         if s is not None:
             spend_vals.append(float(s))
@@ -108,10 +116,13 @@ def _summarize_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "total_clicks": total_clicks,
         "total_impressions": total_impressions,
         "total_cv": total_cv,
+        "conversion_events": {key: value for key, value in sorted(event_totals.items()) if value != 0},
         "avg_ctr": avg_ctr,
         "avg_cpc": avg_cpc,
         "avg_cpm": avg_cpm,
     }
+    if total_cv == 0 and summary["conversion_events"]:
+        summary["cv_note"] = "cv รวมเป็น 0 แต่มีคอนเวอร์ชันรายอีเวนต์ — อ่านคอลัมน์อีเวนต์ที่แคมเปญตั้งไว้ (เช่น cvViewItemDetail)"
     if missing_metrics:
         summary["missing_metrics"] = sorted(missing_metrics)
     return summary

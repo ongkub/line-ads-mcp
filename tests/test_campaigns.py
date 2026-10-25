@@ -148,3 +148,13 @@ async def test_resume_campaign_dry_run_by_default(monkeypatch):
 
     assert result["dry_run"] is True
     assert result["payload"]["configuredStatus"] == "ACTIVE"
+
+
+@pytest.fixture(autouse=True)
+def preview_http(monkeypatch):
+    from line_ads_mcp.client import LineAdsClient
+
+    async def get(self, path, params=None):
+        return {"datas": [{"id": params["ids"], "configuredStatus": "ACTIVE"}]}
+
+    monkeypatch.setattr(LineAdsClient, "get", get)

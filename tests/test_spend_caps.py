@@ -64,7 +64,7 @@ async def test_status_and_report_arguments(report_stub, spend, complete, expecte
     assert data["campaign_id"] == "C1"
     assert data["date_range"] == {"start": "2026-10-01", "end": "2026-10-10"}
     assert data["date_basis"] == "UTC"
-    assert data["cost_unit_note"] == "ค่า cost จากรายงาน LINE Ads (สมมติเป็นบาท — ยืนยันกับบัญชีจริงก่อนเผยแพร่)"
+    assert data["cost_unit_note"] == "ค่า cost จากรายงาน LINE Ads เป็นบาท (THB) — ตรวจกับงบรายวันของบัญชีจริง 25 ต.ค. 2026"
     assert "projection" not in data
     if complete is not True:
         assert data["reason"] == "max_pages_reached"

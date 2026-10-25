@@ -28,7 +28,7 @@ def _variants(prop):
     return prop.get("anyOf", [prop])
 
 
-def _assert_type_contract(prop, annotation):
+def _assert_type_contract(prop, annotation, numeric_id=False):
     """Compare types independently of how nullable schemas are represented."""
     variants = _variants(prop)
     actual = set()
@@ -43,11 +43,14 @@ def _assert_type_contract(prop, annotation):
         if origin is list:
             expected.add("array")
             array = next(variant for variant in variants if variant.get("type") == "array")
-            _assert_type_contract(array["items"], get_args(item)[0])
+            _assert_type_contract(array["items"], get_args(item)[0], numeric_id)
         elif origin is dict:
             expected.add("object")
         else:
             expected.add(type_names[item])
+    if numeric_id and "string" in expected:
+        # MCP accepts numeric IDs; call_tool normalizes them before dispatch.
+        expected.add("integer")
     assert actual == expected
 
 
@@ -67,7 +70,7 @@ def test_registry_matches_function_signature(name):
     hints = get_type_hints(function)
     for parameter_name, parameter in parameters.items():
         prop = schema["properties"][parameter_name]
-        _assert_type_contract(prop, hints[parameter_name])
+        _assert_type_contract(prop, hints[parameter_name], parameter_name.endswith(("_id", "_ids")))
         if parameter.default is inspect.Parameter.empty:
             assert "default" not in prop
         else:
@@ -189,3 +192,49 @@ async def test_call_tool_dispatches_arguments_without_network(monkeypatch):
     response = await server.call_tool("get_entity", arguments)
     assert calls == [arguments]
     assert json.loads(response[0].text) == {"ok": True, "data": {"name": "ตัวอย่าง"}}
+
+
+@pytest.mark.parametrize("name", sorted(server.TOOLS))
+def test_all_id_schemas_accept_numbers_and_strings(name):
+    properties = server.TOOLS[name][1]["properties"]
+    for key, prop in properties.items():
+        if key.endswith("_id"):
+            validator = Draft202012Validator(prop)
+            validator.validate(455243804458)
+            validator.validate("A35403229615" if key == "ad_account_id" else "455243804458")
+            assert not validator.is_valid(1.5)
+            assert not validator.is_valid(True)
+        elif key.endswith("_ids"):
+            Draft202012Validator(prop).validate([455243804458, "123"])
+
+
+@pytest.mark.parametrize("name,arguments,expected", [
+    ("get_entity", {"entity_type": "ad", "entity_id": 455243804458},
+     {"entity_type": "ad", "entity_id": "455243804458"}),
+    ("list_adsets", {"campaign_id": 455243804458, "ad_account_id": "A35403229615"},
+     {"campaign_id": "455243804458", "ad_account_id": "A35403229615"}),
+    ("get_report", {"campaign_id": 123, "adgroup_id": 456, "ad_account_id": 789},
+     {"campaign_id": "123", "adgroup_id": "456", "ad_account_id": "789"}),
+    ("create_adset", {"custom_audience_ids": [123, "456"], "excluded_audience_ids": [789], "daily_budget": 100},
+     {"custom_audience_ids": ["123", "456"], "excluded_audience_ids": ["789"], "daily_budget": 100}),
+    ("list_ads", {"campaign_id": None, "adset_id": "123"}, {"campaign_id": None, "adset_id": "123"}),
+])
+async def test_call_tool_normalizes_only_numeric_ids(monkeypatch, name, arguments, expected):
+    calls = []
+    original = json.loads(json.dumps(arguments))
+
+    async def fake_tool(**kwargs):
+        calls.append(kwargs)
+        return {"ok": True}
+
+    description, schema, _ = server.TOOLS[name]
+    monkeypatch.setitem(server.TOOLS, name, (description, schema, fake_tool))
+    await server.call_tool(name, arguments)
+    assert calls == [expected]
+    assert arguments == original
+
+
+def test_live_check_rules_are_advertised():
+    description = server.TOOLS["estimate_adset_reach"][0]
+    assert "MANUAL" in description and "bid_amount" in description and "LOWEST_COST" in description
+    assert "คืน image_hash สำหรับ create_ad" in server.TOOLS["upload_media"][0]

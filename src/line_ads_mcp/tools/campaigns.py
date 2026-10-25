@@ -8,7 +8,7 @@ from line_ads_mcp.client import LineAdsAPIError, LineAdsClient, LineAdsConfig, r
 
 from .common import clean_dict, dry_run_response, handle_tool_error, ok, require_one_of, to_micro
 from .paging import fetch_all_pages
-from .change_log import track_change, write_entity
+from .change_log import preview_update, track_change, write_entity
 
 # Confirmed from real accounts (2026-10-25): GAIN_FRIENDS, VISIT_MY_WEBSITE, WEBSITE_CONVERSION, REACH.
 # APP_INSTALL / VIDEO_VIEW are unverified. Older names used by this repo are accepted as aliases.
@@ -139,7 +139,7 @@ async def update_campaign(
         )
         endpoint = f"/adaccounts/{account_id}/campaigns/{campaign_id}"
         if dry_run:
-            return dry_run_response("update_campaign", endpoint, payload)
+            return await preview_update(config, account_id, "campaign", "update_campaign", endpoint, payload, campaign_id)
         return await write_entity(config, account_id, "campaign", endpoint, payload, campaign_id)
     except Exception as error:
         return handle_tool_error(error)

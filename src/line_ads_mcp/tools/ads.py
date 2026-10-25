@@ -11,7 +11,7 @@ from line_ads_mcp.client import LineAdsAPIError, LineAdsClient, LineAdsConfig, r
 from .common import clean_dict, dry_run_response, handle_tool_error, ok, require_one_of
 from .entities import get_entity
 from .paging import fetch_all_pages
-from .change_log import track_change, write_entity, set_change_context
+from .change_log import preview_update, track_change, write_entity, set_change_context
 
 AD_STATUS_FILTER = {"ACTIVE", "PAUSED", "DRAFT", "REMOVED"}
 
@@ -64,7 +64,7 @@ async def upload_media(
     dry_run: bool = True,
     workspace_dir: str | None = None,
 ) -> dict[str, Any]:
-    """Upload image or video. Returns imageHash (used in create_ad).
+    """Upload image or video. คืน image_hash สำหรับ create_ad (จาก object.obsHash).
 
     Signing: multipart uses content_type="multipart/form-data" (no boundary) with empty body hash.
     Endpoint verified: /adaccounts/{id}/media/upload
@@ -90,7 +90,11 @@ async def upload_media(
                     },
                 )
         set_change_context(entity_id=data.get("id") if isinstance(data, dict) else None)
-        return ok(data)
+        result = ok(data)
+        media_object = data.get("object") if isinstance(data, dict) else None
+        if isinstance(media_object, dict) and media_object.get("obsHash") is not None:
+            result["image_hash"] = media_object["obsHash"]
+        return result
     except Exception as error:
         return handle_tool_error(error)
 
@@ -243,7 +247,7 @@ async def pause_ad(
         endpoint = f"/adaccounts/{account_id}/ads/{ad_id}"
         payload = {"configuredStatus": "PAUSED"}
         if dry_run:
-            return dry_run_response("pause_ad", endpoint, payload)
+            return await preview_update(config, account_id, "ad", "pause_ad", endpoint, payload, ad_id)
         return await write_entity(config, account_id, "ad", endpoint, payload, ad_id)
     except Exception as error:
         return handle_tool_error(error)
@@ -262,7 +266,7 @@ async def resume_ad(
         endpoint = f"/adaccounts/{account_id}/ads/{ad_id}"
         payload = {"configuredStatus": "ACTIVE"}
         if dry_run:
-            return dry_run_response("resume_ad", endpoint, payload)
+            return await preview_update(config, account_id, "ad", "resume_ad", endpoint, payload, ad_id)
         return await write_entity(config, account_id, "ad", endpoint, payload, ad_id)
     except Exception as error:
         return handle_tool_error(error)

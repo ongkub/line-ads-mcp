@@ -1,4 +1,4 @@
-"""Write safety contracts: no dry-run I/O, before snapshots and readback."""
+"""Write safety contracts: read-only update previews, before snapshots and readback."""
 
 import pytest
 
@@ -196,7 +196,11 @@ async def test_update_money_readback(monkeypatch, tool, arguments, failure):
 
 @pytest.mark.parametrize("tool,status", [(pause_ad, "PAUSED"), (resume_ad, "ACTIVE")])
 async def test_ad_status_dry_run(monkeypatch, tool, status):
-    monkeypatch.setattr(LineAdsClient, "__init__", no_client)
+    async def get(self, path, params=None):
+        return {"datas": [{"id": "ad1", "configuredStatus": "ACTIVE"}]}
+
+    monkeypatch.setattr(LineAdsClient, "get", get)
+    monkeypatch.setattr(LineAdsClient, "post", no_client)
     result = await tool("ad1")
     assert result["dry_run"] is True
     assert result["payload"] == {"configuredStatus": status}
@@ -274,3 +278,86 @@ def test_merge_update_body_keeps_unmentioned_targeting_keys():
     body = merge_update_body(before, {"targeting": {"age": {"min": 25, "max": 34}}})
     assert body == {"id": 1, "name": "เดิม",
                     "targeting": {"age": {"min": 25, "max": 34}, "advancedTargeting": {"groups": [1]}}}
+
+
+@pytest.mark.parametrize("tool,collection,arguments", UPDATES)
+async def test_update_preview_reads_only_and_merges_full_body(monkeypatch, tool, collection, arguments, tmp_path):
+    calls = []
+    before = {"id": "e1", "name": "เดิม", "configuredStatus": "ACTIVE", "deliveryStatus": "DELIVERING", "modifiedDate": "today"}
+
+    async def request(self, method, path, **kwargs):
+        assert method == "GET", "A dry run must never write"
+        calls.append((path, kwargs["params"]))
+        return {"datas": [before]}
+
+    monkeypatch.setattr(LineAdsClient, "request", request)
+    result = await tool("e1", **arguments, workspace_dir=str(tmp_path))
+    status = "PAUSED" if tool.__name__.startswith("pause_") else "ACTIVE"
+    assert result["ok"] is True and result["dry_run"] is True
+    assert result["payload"] == {"configuredStatus": status}
+    assert result["changes"] == {"configuredStatus": {"before": "ACTIVE", "after": status}}
+    assert result["full_body"] == {"id": "e1", "name": "เดิม", "configuredStatus": status}
+    assert "preview_error" not in result
+    assert calls == [(f"/adaccounts/A123/{collection}", {"ids": "e1", "includeRemoved": "true"})]
+    assert not (tmp_path / "line-ads-data").exists()
+
+
+@pytest.mark.parametrize("tool,collection,arguments", UPDATES)
+@pytest.mark.parametrize("failure", ["missing", "raises"])
+async def test_update_preview_failure_preserves_partial_payload(monkeypatch, tool, collection, arguments, failure):
+    async def request(self, method, path, **kwargs):
+        assert method == "GET", "A dry run must never write"
+        if failure == "raises":
+            raise LineAdsAPIError(403, "no read access", "FORBIDDEN")
+        return {"datas": [{"id": "other"}]}
+
+    monkeypatch.setattr(LineAdsClient, "request", request)
+    result = await tool("e1", **arguments)
+    assert result["ok"] is True and result["dry_run"] is True
+    assert result["payload"] == {"configuredStatus": "PAUSED" if tool.__name__.startswith("pause_") else "ACTIVE"}
+    assert ("ไม่พบ" if failure == "missing" else "no read access") in result["preview_error"]
+    assert "full_body" not in result and "changes" not in result
+
+
+@pytest.mark.parametrize("tool", [update_campaign, update_adset])
+async def test_update_preview_money_and_targeting(monkeypatch, tool):
+    before = {"id": "e1", "name": "เดิม", "dailyBudgetMicro": 100_500_000, "bidAmountMicro": 2_000_000,
+              "targeting": {"targetingMode": "MANUAL", "ageMin": 20, "customAudienceIds": ["keep"]}}
+
+    async def get(self, path, params=None):
+        return {"datas": [before]}
+
+    monkeypatch.setattr(LineAdsClient, "get", get)
+    monkeypatch.setattr(LineAdsClient, "post", no_client)
+    arguments = {"daily_budget": 150}
+    if tool is update_adset:
+        arguments.update(bid_amount=3.5, targeting={"ageMin": 30})
+    else:
+        arguments.update(name="ใหม่")
+    result = await tool("e1", **arguments)
+    assert result["changes"]["dailyBudgetMicro"] == {
+        "before": 100_500_000, "after": 150_000_000, "before_thb": 100.5, "after_thb": 150,
+    }
+    if tool is update_adset:
+        assert result["changes"]["bidAmountMicro"] == {
+            "before": 2_000_000, "after": 3_500_000, "before_thb": 2, "after_thb": 3.5,
+        }
+        merged = {**before["targeting"], "ageMin": 30}
+        assert result["changes"]["targeting"] == {"before": before["targeting"], "after": merged}
+        assert result["full_body"]["targeting"] == merged
+        assert result["payload"]["targeting"] == {"ageMin": 30}
+        assert before["targeting"]["ageMin"] == 20
+    else:
+        assert result["changes"]["name"] == {"before": "เดิม", "after": "ใหม่"}
+
+
+async def test_update_preview_missing_money_field(monkeypatch):
+    async def get(self, path, params=None):
+        return {"datas": [{"id": "e1"}]}
+
+    monkeypatch.setattr(LineAdsClient, "get", get)
+    monkeypatch.setattr(LineAdsClient, "post", no_client)
+    result = await update_campaign("e1", daily_budget=0)
+    assert result["changes"]["dailyBudgetMicro"] == {
+        "before": None, "after": 0, "before_thb": None, "after_thb": 0,
+    }

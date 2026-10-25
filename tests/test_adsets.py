@@ -369,3 +369,13 @@ async def test_create_adset_rejects_ages_not_in_ui(age_min, age_max):
     )
 
     assert result["ok"] is False
+
+
+@pytest.fixture(autouse=True)
+def preview_http(monkeypatch):
+    from line_ads_mcp.client import LineAdsClient
+
+    async def get(self, path, params=None):
+        return {"datas": [{"id": params["ids"], "configuredStatus": "ACTIVE"}]}
+
+    monkeypatch.setattr(LineAdsClient, "get", get)
